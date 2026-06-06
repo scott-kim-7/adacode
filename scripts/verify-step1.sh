@@ -81,7 +81,20 @@ if curl -sf "$BASE/v1/models" >/dev/null 2>&1; then
 	fi
 fi
 
-# 8. docs
+# 8. HF model cache (no server load; skips if venv missing)
+if [[ -d "$ROOT/.venv-mlx" ]]; then
+	export ADA_MLX_MODEL="$MODEL"
+	# shellcheck source=/dev/null
+	if source "$ROOT/.venv-mlx/bin/activate" && python "$ROOT/scripts/ada/verify_mlx_cache.py" >/dev/null 2>&1; then
+		ok "Qwen model in HF cache (verify-qwen-download)"
+	else
+		bad "Qwen model not in HF cache — run: ./scripts/download-qwen-model.sh"
+	fi
+else
+	echo "  [skip] HF cache check (no .venv-mlx)"
+fi
+
+# 9. docs
 if [[ -f "$ROOT/docs/ada/step1/README.md" ]]; then
 	ok "Step 1 documentation"
 else
@@ -104,3 +117,4 @@ echo "  • Model picker → Qwen2.5-VL-72B-Instruct (MLX 4-bit)"
 echo "  • #filename file context"
 echo "  • diff Accept/Reject"
 echo "  • Agent tool call"
+echo "  • Image attach → expected FAIL (mlx_lm server); see docs/ada/step1/TROUBLESHOOTING.md"

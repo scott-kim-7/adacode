@@ -1,0 +1,19 @@
+[
+	{
+		"vendor": "openai",
+		"name": "External OpenAI",
+		"apiKey": "REPLACE_WITH_YOUR_KEY_OR_USE_VAULT_FOR_ADA_CLI",
+		"apiType": "chat-completions",
+		"models": [
+			{
+				"id": "gpt-4o-mini",
+				"name": "GPT-4o mini (External)",
+				"url": "https://api.openai.com/v1",
+				"toolCalling": false,
+				"maxInputTokens": 128000,
+				"maxOutputTokens": 16384,
+				"streaming": true
+			}
+		]
+	}
+]

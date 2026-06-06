@@ -79,3 +79,23 @@ Qwen 72B Q4는 M4 Max 128GB에서 **8~15 tok/s** 가 정상입니다.
 ## BYOK 정책 (`isClientBYOKAllowed`)
 
 adacode fork에서는 **항상 허용** (`return true`). upstream VS Code/Copilot Enterprise 정책은 적용되지 않습니다.
+
+## 채팅 이미지 첨부 실패
+
+**증상:** 이미지를 채팅에 붙이면 `"Only 'text' content type is supported."` 또는 유사 오류.
+
+**원인 (모델 문제 아님):** `mlx_lm` OpenAI-compatible 서버(`serve-qwen.sh` → `mlx_lm.server`)가 **text content만** 처리합니다. BYOK JSON에 `"vision": true` 가 있어도 서버가 `image_url` / multimodal part를 거부합니다.
+
+Copilot BYOK 경로(`CopilotLanguageModelWrapper` → `http://127.0.0.1:8080`)까지는 이미지 전송을 시도하지만, 서버 `process_message_content()` 에서 차단됩니다.
+
+**Step 1 정책 (옵션 A):** 텍스트·Agent·`#파일`·diff는 정상. **이미지는 Step 1 범위 밖** — [COMPLETE.md](COMPLETE.md) Go/No-Go 참고.
+
+**Step 2+ 대안:**
+
+| 방향 | 설명 |
+|------|------|
+| VL 전용 경로 | mlx_lm 서버 패치 또는 별도 VL inference 스크립트 |
+| Tri-Chat 역할 분담 | 로컬=이미지 처리, 외부 LLM=텍스트 요약 (ada orchestration) |
+| 텍스트 전용 모델 | Step 1 기본을 `Qwen2.5-72B-Instruct-4bit` 로 두고 VL은 Step 2에서 분리 |
+
+**당장 우회:** 이미지 대신 **텍스트로 설명**하거나, OCR 결과를 붙여 질의하세요.

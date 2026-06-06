@@ -1,5 +1,9 @@
 .DS_Store
 .venv-mlx/
+ada/.venv/
+ada/vault/secrets.vault.enc
+ada/**/__pycache__/
+ada/**/*.egg-info/
 .ada-mlx-server.log
 .ada-mlx-server.pid
 .cache

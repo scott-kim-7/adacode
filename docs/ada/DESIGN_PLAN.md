@@ -28,17 +28,19 @@
 
 ## Phase 로드맵
 
-| Phase | 기간 | 산출 |
-|-------|------|------|
-| **Pre** | ✓ | 설계 문서 (ada_v1 → adacode 이전) |
-| **0** | ✓ | adacode fork · clone · build · 실행 |
-| **1** | 1주 | vault, MLX serve, `ada/` scaffold |
-| **2** | 2~3주 | Spec 자기개선 + web 4탭 |
-| **3** | 2주 | Cursor형 web (@file, diff) |
-| **4** | 3~4주 | ada-vscode → 빌드 IDE에 탑재 |
-| **5** | 3~4주 | 소스코드 자기개선 |
-| **6** | 2~3주 | @codebase RAG + Tri-Chat |
-| **7** | 선택 | product.json 브랜딩 |
+| Phase | 기간 | 산출 | 4단계 Step |
+|-------|------|------|------------|
+| **Pre** | ✓ | 설계 문서 (ada_v1 → adacode 이전) | — |
+| **0** | ✓ | adacode fork · clone · build · 실행 | Step 0 |
+| **1** | 1주 | vault, MLX serve, `ada/` scaffold | **Step 2** |
+| **2** | 2~3주 | Spec 자기개선 + web 4탭 | Step 4 |
+| **3** | 2주 | Cursor형 web (@file, diff) | Step 2~3 |
+| **4** | 3~4주 | ada-vscode → 빌드 IDE에 탑재 | Step 1 (BYOK) |
+| **5** | 3~4주 | 소스코드 자기개선 | Step 4 |
+| **6** | 2~3주 | @codebase RAG + Tri-Chat | **Step 2** |
+| **7** | 선택 | product.json 브랜딩 | — |
+
+> **4단계 vs Phase:** Step 1(로컬 LLM IDE)은 Phase 4 BYOK로 달성. Step 2(Tri-Chat)는 Phase 1 scaffold + Phase 6. 상세: [SUMMARY.md](SUMMARY.md)
 
 ## 저장소 구조
 

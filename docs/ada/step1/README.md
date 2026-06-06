@@ -145,12 +145,17 @@ BYOK 설정이 **잘못된 폴더**에 있으면 Qwen이 안 보입니다. macOS
 
 ## 7. Go/No-Go 체크리스트
 
-- [x] `./scripts/verify-step1.sh` — 11/11 passed (2026-06-06)
+- [x] `./scripts/verify-step1.sh` — 자동 검증 (HF 캐시 포함)
 - [x] Qwen 72B chat completion
 - [x] BYOK + `chat.agent.enabled` 설치
-- [ ] IDE에서 `./scripts/adacode.sh` → 채팅·`#파일`·diff·Agent (사용자 1회 확인)
+- [x] IDE `./scripts/adacode.sh` → 채팅·`#파일`·diff·Agent
+- [ ] 이미지 첨부 — **Step 1 범위 밖** (mlx_lm 서버 한계, Step 2+)
 
 완료 기록: [COMPLETE.md](COMPLETE.md)
+
+## 8. 알려진 한계 — 이미지
+
+VL 모델 ID를 쓰지만 **mlx_lm OpenAI 서버는 이미지 입력 미지원**. [TROUBLESHOOTING.md](TROUBLESHOOTING.md#채팅-이미지-첨부-실패)
 
 ## 트러블슈팅
 

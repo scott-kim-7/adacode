@@ -43,14 +43,18 @@ IDE만 실행 (로컬 LLM 없이): `./scripts/code.sh`
 | [SUMMARY.md](SUMMARY.md) | 기획 요약 (의사결정 기록) |
 | [VAULT.md](VAULT.md) | 계정·비밀번호 단일 vault 정책 |
 | [step1/README.md](step1/README.md) | **Step 1** — 로컬 Qwen 72B + Cursor형 adacode |
+| [step2/README.md](step2/README.md) | **Step 2** — Model Registry, vault, Tri-Chat |
 | [COMMITS.md](COMMITS.md) | 커밋·스냅샷 규칙 |
 
 ## 현재 상태
 
 - **Step 0 완료** — fork·`npm run compile`·`./scripts/code.sh`
-- **Step 1 완료** — 로컬 Qwen 72B + BYOK + `./scripts/adacode.sh` ([완료 기록](step1/COMPLETE.md))
-- **Step 2 다음** — 외부 LLM + Tri-Chat
+- **Step 1 완료** — 로컬 Qwen VL 72B + BYOK + `./scripts/adacode.sh` ([완료 기록](step1/COMPLETE.md))
+- **Step 1b 완료** — Go/No-Go·VL 이미지 한계 문서화 (텍스트·Agent·#파일 OK, 이미지는 Step 2+)
+- **Step 2 진행** — `ada/` Model Registry, vault, 외부 LLM, Tri-Chat ([step2/README.md](step2/README.md))
 - 하드웨어: MacBook Pro M4 Max, 128GB RAM
+
+> **로드맵 정리:** 4단계 Step 1~4가 사용자-facing 목표이고, [DESIGN_PLAN.md](DESIGN_PLAN.md) Phase 0~7은 구현 세부( vault·web·ada-vscode 등 )를 담습니다. Phase 1 scaffold = Step 2 `ada/` 착수.
 
 ## 빠른 시작 (Step 1 — 수동)
 
