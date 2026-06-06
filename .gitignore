@@ -1,4 +1,7 @@
 .DS_Store
+.venv-mlx/
+.ada-mlx-server.log
+.ada-mlx-server.pid
 .cache
 npm-debug.log
 Thumbs.db

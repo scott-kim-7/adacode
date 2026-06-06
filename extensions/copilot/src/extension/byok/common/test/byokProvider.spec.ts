@@ -74,35 +74,8 @@ describe('resolveModelInfo', () => {
 });
 
 describe('isClientBYOKAllowed', () => {
-	function mockToken(props: { isInternal?: boolean; isIndividual?: boolean; isClientBYOKEnabled?: boolean }): Omit<CopilotToken, 'token'> {
-		return {
-			isInternal: props.isInternal ?? false,
-			isIndividual: props.isIndividual ?? false,
-			isClientBYOKEnabled: () => props.isClientBYOKEnabled ?? false,
-		} as unknown as Omit<CopilotToken, 'token'>;
-	}
-
-	it('allows BYOK when there is no GitHub session (truly signed-out)', () => {
+	it('always allows BYOK in the adacode fork', () => {
 		expect(isClientBYOKAllowed(false, undefined)).toBe(true);
-	});
-
-	it('denies BYOK when signed-in but the Copilot token is unavailable (e.g. EnterpriseManagedError)', () => {
-		expect(isClientBYOKAllowed(true, undefined)).toBe(false);
-	});
-
-	it('allows BYOK for internal users', () => {
-		expect(isClientBYOKAllowed(true, mockToken({ isInternal: true }))).toBe(true);
-	});
-
-	it('allows BYOK for individual users', () => {
-		expect(isClientBYOKAllowed(true, mockToken({ isIndividual: true }))).toBe(true);
-	});
-
-	it('allows BYOK when the token explicitly enables it (e.g. enterprise org opt-in)', () => {
-		expect(isClientBYOKAllowed(true, mockToken({ isClientBYOKEnabled: true }))).toBe(true);
-	});
-
-	it('denies BYOK for signed-in managed users when no policy flag is set', () => {
-		expect(isClientBYOKAllowed(true, mockToken({}))).toBe(false);
+		expect(isClientBYOKAllowed(true, undefined)).toBe(true);
 	});
 });

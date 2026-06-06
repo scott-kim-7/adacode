@@ -34,6 +34,7 @@ import { isBuiltinChatMode, IChatMode } from '../../../../../workbench/contrib/c
 import { CancellationToken, CancellationTokenSource } from '../../../../../base/common/cancellation.js';
 import { generateUuid } from '../../../../../base/common/uuid.js';
 import { ILanguageModelChatMetadataAndIdentifier, ILanguageModelsService } from '../../../../../workbench/contrib/chat/common/languageModels.js';
+import { getAdacodeLocalByokModels } from '../../../../../workbench/contrib/chat/common/adacodeLocalModels.js';
 import { IGitService, IGitRepository } from '../../../../../workbench/contrib/git/common/gitService.js';
 import { IContextKeyService, ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
 import { ExtensionIdentifier } from '../../../../../platform/extensions/common/extensions.js';
@@ -1590,27 +1591,43 @@ export class CopilotChatSessionsProvider extends Disposable implements ISessions
 
 	getModels(sessionId: string): readonly ILanguageModelChatMetadataAndIdentifier[] {
 		const session = this.getSession(sessionId);
+		let models: readonly ILanguageModelChatMetadataAndIdentifier[];
 		if (session instanceof RemoteNewSession) {
 			// Cloud sessions: models come from the extension-host `models` option
 			// group rather than from registered language models. Synthesize
 			// language-model metadata from each option item so the shared model
 			// picker widget can render them like regular language models.
 			const modelOption = session.getModelOptionGroup();
-			return modelOption?.group.items.map((item): ILanguageModelChatMetadataAndIdentifier => this._toSyntheticModel(item)) ?? [];
+			models = modelOption?.group.items.map((item): ILanguageModelChatMetadataAndIdentifier => this._toSyntheticModel(item)) ?? [];
+		} else {
+			// CLI / Claude sessions: language models registered against the session's
+			// `targetChatSessionType`.
+			const sessionType = session?.sessionType;
+			if (!sessionType) {
+				models = [];
+			} else {
+				models = this.languageModelsService.getLanguageModelIds()
+					.map((id): ILanguageModelChatMetadataAndIdentifier | undefined => {
+						const metadata = this.languageModelsService.lookupLanguageModel(id);
+						return metadata && metadata.targetChatSessionType === sessionType ? { identifier: id, metadata } : undefined;
+					})
+					.filter((m): m is ILanguageModelChatMetadataAndIdentifier => !!m);
+			}
 		}
 
-		// CLI / Claude sessions: language models registered against the session's
-		// `targetChatSessionType`.
-		const sessionType = session?.sessionType;
-		if (!sessionType) {
-			return [];
-		}
-		return this.languageModelsService.getLanguageModelIds()
+		return this._mergeAdacodeLocalByokModels(models);
+	}
+
+	private _mergeAdacodeLocalByokModels(models: readonly ILanguageModelChatMetadataAndIdentifier[]): ILanguageModelChatMetadataAndIdentifier[] {
+		const allModels = this.languageModelsService.getLanguageModelIds()
 			.map((id): ILanguageModelChatMetadataAndIdentifier | undefined => {
 				const metadata = this.languageModelsService.lookupLanguageModel(id);
-				return metadata && metadata.targetChatSessionType === sessionType ? { identifier: id, metadata } : undefined;
+				return metadata ? { identifier: id, metadata } : undefined;
 			})
 			.filter((m): m is ILanguageModelChatMetadataAndIdentifier => !!m);
+		const localByok = getAdacodeLocalByokModels(allModels);
+		const seen = new Set(models.map(model => model.identifier));
+		return [...models, ...localByok.filter(model => !seen.has(model.identifier))];
 	}
 
 	getModelPickerOptions(_sessionId: string): ISessionModelPickerOptions {
@@ -1618,7 +1635,7 @@ export class CopilotChatSessionsProvider extends Disposable implements ISessions
 			useGroupedModelPicker: true,
 			showFeatured: true,
 			showUnavailableFeatured: false,
-			showManageModelsAction: false,
+			showManageModelsAction: true,
 		};
 	}
 

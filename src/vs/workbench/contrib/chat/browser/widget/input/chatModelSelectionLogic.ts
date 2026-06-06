@@ -5,6 +5,7 @@
 
 import { ChatAgentLocation, ChatModeKind } from '../../../common/constants.js';
 import { ILanguageModelChatMetadata, ILanguageModelChatMetadataAndIdentifier } from '../../../common/languageModels.js';
+import { getAdacodeLocalByokModels } from '../../../common/adacodeLocalModels.js';
 
 /**
  * Describes the context needed for model selection decisions.
@@ -30,10 +31,16 @@ export function filterModelsForSession(
 	location: ChatAgentLocation,
 ): ILanguageModelChatMetadataAndIdentifier[] {
 	if (sessionType && sessionType !== 'local' && hasModelsTargetingSession(models, sessionType)) {
-		return models.filter(entry =>
+		const targeted = models.filter(entry =>
 			entry.metadata?.targetChatSessionType === sessionType &&
 			entry.metadata?.isUserSelectable !== false
 		);
+		const localByok = getAdacodeLocalByokModels(models).filter(entry =>
+			isModelSupportedForMode(entry, currentModeKind) &&
+			isModelSupportedForInlineChat(entry, location)
+		);
+		const seen = new Set(targeted.map(entry => entry.identifier));
+		return [...targeted, ...localByok.filter(entry => !seen.has(entry.identifier))];
 	}
 
 	return models.filter(entry =>

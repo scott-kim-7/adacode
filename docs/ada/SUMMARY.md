@@ -25,8 +25,8 @@
 | Phase | 내용 |
 |-------|------|
 | **0** | ✓ adacode fork·빌드·실행 |
-| **1** | vault, MLX, `ada/` scaffold |
-| **2** | Spec 자기개선 + web UI |
+| **1 / Step 1** | ✓ 로컬 Qwen 72B + Cursor형 adacode (`./scripts/adacode.sh`) |
+| **2** | 외부 LLM + Tri-Chat |
 | **3** | Cursor형 web |
 | **4** | ada-vscode |
 | **5** | 소스코드 자기개선 |

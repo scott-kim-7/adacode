@@ -1,0 +1,4 @@
+{
+	"chat.agent.enabled": true,
+	"sessions.chat.localAgent.enabled": true
+}

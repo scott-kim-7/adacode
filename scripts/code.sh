@@ -40,6 +40,8 @@ function code() {
 	export NODE_ENV=development
 	export VSCODE_DEV=1
 	export VSCODE_CLI=1
+	# adacode: allow Custom Endpoint BYOK even when signed into GitHub Copilot
+	export ADA_FORCE_BYOK=1
 	export ELECTRON_ENABLE_STACK_DUMPING=1
 	export ELECTRON_ENABLE_LOGGING=1
 
