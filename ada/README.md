@@ -1,45 +1,45 @@
-# Ada — AI orchestration (Step 2+)
+# Ada — AI orchestration (web-only)
 
-Python 패키지: Model Registry, vault, Tri-Chat CLI.
+Python 패키지: Model Registry, vault, Tri-Chat, LangGraph CLI.
+
+**메인 UI는 Open WebUI** — `./scripts/serve-ada.sh` (레포 루트 README 참고).
 
 ## 설치
 
 ```bash
-cd ada
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev]"
+./scripts/install-step2.sh
+# 또는
+cd ada && python3 -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"
 ```
 
-## Vault
+## CLI
 
 ```bash
-make vault-init          # ada/vault/secrets.vault.enc 생성
-make vault-set KEY=external.openai.api_key
-make vault-list
+ada profiles
+ada ada-agent --once "Hello"    # LangGraph pass-through → MLX
+ada tri-chat                    # 로컬 + 외부 LLM 3자 대화
 ```
 
 ## Model Registry
 
-```bash
-ada profiles             # chat_profile, external_profile, regression_profile
-ada profile chat_profile
-```
-
 설정: [`config/model_registry.yaml`](config/model_registry.yaml)
 
-## Tri-Chat MVP
+`chat_profile` → `http://127.0.0.1:8080/v1` (MLX, Open WebUI와 동일 endpoint)
 
-로컬 MLX → 외부 LLM → 사용자 순환 (CLI):
+## Vault
 
 ```bash
-# MLX 서버 필요: ./scripts/serve-qwen.sh
-ada tri-chat
-
-# 비대화 1회 (테스트)
-ada tri-chat --once "Hello tri-chat"
+make vault-init
+make vault-set KEY=external.openai.api_key
 ```
 
-외부 LLM 키: vault `external.openai.api_key` 또는 개발용 `ADA_EXTERNAL_API_KEY`.
+## 검증
 
-문서: [docs/ada/step2/README.md](../docs/ada/step2/README.md)
+```bash
+./scripts/verify-ada.sh
+pytest
+```
+
+## 구조
+
+[STRUCTURE.md](STRUCTURE.md)

@@ -1,0 +1,27 @@
+services:
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: ${ADA_OPEN_WEBUI_CONTAINER:-adacode-open-webui}
+    ports:
+      - "${ADA_OPEN_WEBUI_PORT:-3000}:8080"
+    environment:
+      # OpenAI-compatible MLX connection (required for model list + chat)
+      ENABLE_OPENAI_API: "true"
+      OPENAI_API_BASE_URL: ${OPENAI_API_BASE_URL:-http://host.docker.internal:8081/v1}
+      OPENAI_API_BASE_URLS: ${OPENAI_API_BASE_URL:-http://host.docker.internal:8081/v1}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-local}
+      OPENAI_API_KEYS: ${OPENAI_API_KEY:-local}
+      # Shown when MLX is reachable; also pins default in fresh installs
+      DEFAULT_MODELS: ${ADA_MLX_MODEL:-mlx-community/Qwen3-VL-32B-Instruct-8bit}
+      # Keep chat traffic on the backend proxy (8081), not browser → MLX direct
+      ENABLE_DIRECT_CONNECTIONS: "false"
+      # Disable Ollama noise (we only use MLX OpenAI API)
+      ENABLE_OLLAMA_API: "false"
+    volumes:
+      - open-webui:/app/backend/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+volumes:
+  open-webui:

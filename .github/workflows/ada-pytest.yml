@@ -1,0 +1,26 @@
+name: Ada Python
+
+on:
+  push:
+    paths:
+      - 'ada/**'
+      - 'scripts/verify-ada.sh'
+      - 'web/**'
+  pull_request:
+    paths:
+      - 'ada/**'
+      - 'scripts/verify-ada.sh'
+      - 'web/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install ada
+        run: pip install -e "ada[dev]"
+      - name: Pytest
+        run: pytest ada/tests/ -q

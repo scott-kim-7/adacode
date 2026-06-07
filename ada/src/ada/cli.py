@@ -63,6 +63,52 @@ def cmd_vault_list(_args: argparse.Namespace) -> int:
 	return 0
 
 
+def cmd_ada_agent(args: argparse.Namespace) -> int:
+	from ada.agent.graph import run_user_turn
+	from ada.agent.llm import load_profile_from_env, make_llm_callable
+
+	profile_name = args.profile or None
+	if profile_name:
+		import os
+
+		os.environ["ADA_AGENT_PROFILE"] = profile_name
+
+	profile = load_profile_from_env()
+	llm_callable = make_llm_callable(profile, vault_password=args.vault_password)
+	history = []
+
+	def run_once(user_text: str) -> str:
+		nonlocal history
+		assistant_text, history = run_user_turn(user_text, history, llm_callable)
+		return assistant_text
+
+	try:
+		if args.once:
+			print(run_once(args.once))
+			return 0
+
+		print(f"Ada Agent — profile: {profile.name} ({profile.label})")
+		print("Commands: /quit  /history")
+		while True:
+			try:
+				line = input("\nYou> ").strip()
+			except (EOFError, KeyboardInterrupt):
+				print()
+				break
+			if not line:
+				continue
+			if line in ("/quit", "/exit"):
+				break
+			if line == "/history":
+				for idx, msg in enumerate(history, start=1):
+					content = getattr(msg, "content", "")
+					print(f"  {idx}. {type(msg).__name__}: {content!s}"[:160])
+				continue
+			print(f"\n[assistant]\n{run_once(line)}\n")
+	finally:
+		return 0
+
+
 def cmd_tri_chat(args: argparse.Namespace) -> int:
 	reg = load_registry()
 	session = TriChatSession.from_registry(reg, vault_password=args.vault_password)
@@ -120,6 +166,12 @@ def build_parser() -> argparse.ArgumentParser:
 	p_tri.add_argument("--once", metavar="MSG", help="Run one user turn and exit")
 	p_tri.add_argument("--vault-password", help=argparse.SUPPRESS)
 	p_tri.set_defaults(func=cmd_tri_chat)
+
+	p_agent = sub.add_parser("ada-agent", help="Ada Agent pass-through (LangGraph MVP)")
+	p_agent.add_argument("--once", metavar="MSG", help="Run one user turn and exit")
+	p_agent.add_argument("--profile", help="Model registry profile (default: chat_profile)")
+	p_agent.add_argument("--vault-password", help=argparse.SUPPRESS)
+	p_agent.set_defaults(func=cmd_ada_agent)
 
 	return parser
 
