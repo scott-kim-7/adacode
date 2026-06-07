@@ -2,9 +2,13 @@
 # Smoke-test the local MLX OpenAI-compatible server (Step 1).
 set -euo pipefail
 
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# shellcheck source=ada/mlx_defaults.sh
+source "$ROOT/scripts/ada/mlx_defaults.sh"
+
 HOST="${ADA_MLX_HOST:-127.0.0.1}"
 PORT="${ADA_MLX_PORT:-8080}"
-MODEL="${ADA_MLX_MODEL:-mlx-community/Qwen2.5-VL-72B-Instruct-4bit}"
+MODEL="${ADA_MLX_MODEL:-$ADA_MLX_MODEL_DEFAULT}"
 BASE="http://${HOST}:${PORT}"
 
 echo "Checking MLX server at $BASE ..."

@@ -14,6 +14,7 @@ import { IExperimentationService } from '../../../platform/telemetry/common/null
 import { ITokenizerProvider } from '../../../platform/tokenizer/node/tokenizer';
 import { IInstantiationService } from '../../../util/vs/platform/instantiation/common/instantiation';
 import { resolveModelInfo } from '../common/byokProvider';
+import { IEndpointBody } from '../../../platform/networking/common/networking';
 import { OpenAIEndpoint } from '../node/openAIEndpoint';
 import { AbstractOpenAICompatibleLMProvider, LanguageModelChatConfiguration, OpenAICompatibleLanguageModelChatInformation } from './abstractLanguageModelChatProvider';
 import { byokKnownModelToAPIInfoWithEffort } from './byokModelInfo';
@@ -66,6 +67,16 @@ function inferApiTypeFromUrl(url: string): CustomEndpointApiType {
 		return 'responses';
 	}
 	return 'chat-completions';
+}
+
+/** Local MLX / ada serve-qwen (127.0.0.1, localhost). */
+export function isLocalMlxEndpointUrl(url: string): boolean {
+	try {
+		const parsed = new URL(url);
+		return parsed.hostname === '127.0.0.1' || parsed.hostname === 'localhost';
+	} catch {
+		return /\/\/(127\.0\.0\.1|localhost)(:\d+)?/i.test(url);
+	}
 }
 
 function apiTypeToSupportedEndpoints(apiType: CustomEndpointApiType): ModelSupportedEndpoint[] | undefined {
@@ -289,5 +300,24 @@ export class CustomEndpointOAIEndpoint extends OpenAIEndpoint {
 			return value;
 		}
 		return value.split('${apiKey}').join(this._apiKey);
+	}
+
+	/**
+	 * mlx-vlm (serve-qwen.sh) needs explicit max_tokens; the BYOK base class deletes it.
+	 * Non-streaming is more reliable for slow VL prefill in the IDE chat UI.
+	 */
+	public override interceptBody(body: IEndpointBody | undefined): void {
+		super.interceptBody(body);
+		if (!body || this.useMessagesApi || this.useResponsesApi) {
+			return;
+		}
+		if (!isLocalMlxEndpointUrl(this._modelUrl)) {
+			return;
+		}
+		if (this.maxOutputTokens > 0) {
+			body.max_tokens = this.maxOutputTokens;
+		}
+		// mlx-vlm emits a trailing usage chunk with choices:[] — avoid stream_options quirks.
+		delete body.stream_options;
 	}
 }

@@ -19,13 +19,15 @@ npm install && npm run compile          # IDE 빌드 (Step 0)
 ./scripts/verify-step1.sh               # Step 1 자동 검증
 ```
 
-IDE가 열리면 채팅 패널 → **Qwen2.5-VL-72B-Instruct (MLX 4-bit)** 선택 → Agent 모드. 파일 참조는 `#파일명` (Cursor `@file`과 동일).
+IDE가 열리면 채팅 패널 → **Qwen3-VL-32B-Instruct (MLX 8-bit)** 선택 → Agent 모드. 파일 참조는 `#파일명` (Cursor `@file`과 동일). **이미지 첨부**는 `mlx-vlm` 서버(`serve-qwen.sh`)로 지원됩니다.
 
 옵션:
 
 | 환경 변수 | 기본값 | 설명 |
 |-----------|--------|------|
-| `ADA_MLX_MODEL` | `mlx-community/Qwen2.5-VL-72B-Instruct-4bit` | MLX 모델 ID |
+| `ADA_MLX_MODEL` | `mlx-community/Qwen3-VL-32B-Instruct-8bit` | MLX 모델 ID |
+| `ADA_MLX_DISPLAY_NAME` | `Qwen3-VL-32B-Instruct (MLX 8-bit)` | 표시 이름 |
+| `ADA_MLX_ENABLE_THINKING` | `auto` | Thinking 모델이면 `mlx-vlm --enable-thinking` |
 | `ADA_MLX_PORT` | `8080` | MLX 포트 |
 | `ADA_MLX_WAIT_TRIES` | `120` | 서버 준비 대기 (×2초) |
 

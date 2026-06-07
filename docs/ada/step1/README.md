@@ -8,7 +8,7 @@
 
 ---
 
-adacode(VS Code fork)에 **MLX Qwen2.5-VL-72B**를 연결해 Copilot Chat(BYOK Custom Endpoint)으로 Cursor와 같은 채팅·`#파일`·diff·Agent UX를 사용합니다.
+adacode(VS Code fork)에 **MLX Qwen3-VL-32B-Instruct**를 연결해 Copilot Chat(BYOK Custom Endpoint)으로 Cursor와 같은 채팅·`#파일`·diff·Agent UX를 사용합니다.
 
 ## 사전 조건
 
@@ -20,9 +20,9 @@ adacode(VS Code fork)에 **MLX Qwen2.5-VL-72B**를 연결해 Copilot Chat(BYOK C
 
 ```bash
 cd adacode
-python3 -m venv .venv-mlx
+python3 -m venv .venv-mlx   # 또는 ./scripts/ensure-mlx-venv.sh
 source .venv-mlx/bin/activate
-pip install -U mlx-lm
+pip install -U mlx-lm mlx-vlm
 ```
 
 ## 2. 모델 미리 받기 (선택, 권장)
@@ -42,11 +42,13 @@ IDE/서버 실행 전에 Hugging Face 캐시에만 받아 둘 수 있습니다. 
 ./scripts/verify-qwen-download.sh --smoke  # + MLX 서버에 한 줄 질의
 ```
 
-## 3. MLX 서버 기동
+## 3. MLX-VLM 서버 기동 (vision / 이미지 지원)
 
 ```bash
 ./scripts/serve-qwen.sh
 ```
+
+`mlx-vlm` OpenAI 서버 — **이미지 첨부(`image_url`) 지원**. 구 `mlx_lm` 서버가 8080에 있으면 `./scripts/stop-mlx-server.sh` 후 재시작.
 
 서버 첫 기동 시 캐시에 없으면 그때 다운로드합니다 (`download-qwen-model.sh` 로 미리 받아 두면 생략).
 
@@ -54,7 +56,8 @@ IDE/서버 실행 전에 Hugging Face 캐시에만 받아 둘 수 있습니다. 
 
 | 변수 | 기본값 | 설명 |
 |------|--------|------|
-| `ADA_MLX_MODEL` | `mlx-community/Qwen2.5-VL-72B-Instruct-4bit` | HF 모델 ID |
+| `ADA_MLX_MODEL` | `mlx-community/Qwen3-VL-32B-Instruct-8bit` | HF 모델 ID |
+| `ADA_MLX_DISPLAY_NAME` | `Qwen3-VL-32B-Instruct (MLX 8-bit)` | 표시 이름 |
 | `ADA_MLX_HOST` | `127.0.0.1` | 바인드 주소 |
 | `ADA_MLX_PORT` | `8080` | 포트 |
 
@@ -62,7 +65,7 @@ IDE/서버 실행 전에 Hugging Face 캐시에만 받아 둘 수 있습니다. 
 
 ```bash
 ./scripts/verify-step1-mlx.sh
-# 다른 모델로 테스트: ADA_MLX_MODEL=mlx-community/Qwen2.5-7B-Instruct-4bit ./scripts/verify-step1-mlx.sh
+./scripts/verify-step1-vision.sh   # 이미지 multimodal smoke test
 ```
 
 ## 4. adacode BYOK 설정
@@ -118,7 +121,7 @@ export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && nvm use 24.15.0
 ./scripts/code.sh
 ```
 
-채팅 패널 → 모델 피커 → **Other Models** → **Qwen2.5-VL-72B-Instruct (MLX 4-bit)** → Agent 모드.
+채팅 패널 → 모델 피커 → **Other Models** → **Qwen3-VL-32B-Instruct (MLX 8-bit)** → Agent 모드.
 
 ### 모델이 목록에 없을 때
 
@@ -132,7 +135,7 @@ BYOK 설정이 **잘못된 폴더**에 있으면 Qwen이 안 보입니다. macOS
 ./scripts/adacode.sh
 ```
 
-모델 피커에서 **Other Models** 를 펼친 뒤 **Qwen2.5-VL-72B-Instruct (MLX 4-bit)** 를 선택하세요.
+모델 피커에서 **Other Models** 를 펼친 뒤 **Qwen3-VL-32B-Instruct (MLX 8-bit)** 를 선택하세요.
 
 ## 6. Cursor 대응 기능
 
@@ -148,14 +151,13 @@ BYOK 설정이 **잘못된 폴더**에 있으면 Qwen이 안 보입니다. macOS
 - [x] `./scripts/verify-step1.sh` — 자동 검증 (HF 캐시 포함)
 - [x] Qwen 72B chat completion
 - [x] BYOK + `chat.agent.enabled` 설치
-- [x] IDE `./scripts/adacode.sh` → 채팅·`#파일`·diff·Agent
-- [ ] 이미지 첨부 — **Step 1 범위 밖** (mlx_lm 서버 한계, Step 2+)
+- [x] IDE `./scripts/adacode.sh` → 채팅·`#파일`·diff·Agent·**이미지**
 
 완료 기록: [COMPLETE.md](COMPLETE.md)
 
-## 8. 알려진 한계 — 이미지
+## 8. 이미지 (mlx-vlm)
 
-VL 모델 ID를 쓰지만 **mlx_lm OpenAI 서버는 이미지 입력 미지원**. [TROUBLESHOOTING.md](TROUBLESHOOTING.md#채팅-이미지-첨부-실패)
+[`verify-step1-vision.sh`](../../../scripts/verify-step1-vision.sh) — [TROUBLESHOOTING.md](TROUBLESHOOTING.md#채팅-이미지-첨부)
 
 ## 트러블슈팅
 

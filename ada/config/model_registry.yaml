@@ -6,10 +6,10 @@ profiles:
     label: Local Qwen (MLX)
     provider: openai-compatible
     base_url: http://127.0.0.1:8080/v1
-    model: mlx-community/Qwen2.5-VL-72B-Instruct-4bit
+    model: mlx-community/Qwen3-VL-32B-Instruct-8bit
     api_key: local
     tool_calling: true
-    notes: Step 1 IDE BYOK와 동일 endpoint. VL 이미지는 mlx_lm 서버 한계로 텍스트만.
+    notes: Step 1 IDE BYOK와 동일 endpoint. Vision via mlx-vlm server (serve-qwen.sh).
 
   external_profile:
     label: External API LLM
@@ -24,7 +24,7 @@ profiles:
     label: Regression (local MLX fixed)
     provider: openai-compatible
     base_url: http://127.0.0.1:8080/v1
-    model: mlx-community/Qwen2.5-VL-72B-Instruct-4bit
+    model: mlx-community/Qwen3-VL-32B-Instruct-8bit
     api_key: local
     tool_calling: true
     notes: Step 4 placeholder — 회귀·자기개선은 로컬 MLX 고정.

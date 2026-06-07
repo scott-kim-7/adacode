@@ -5,6 +5,9 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+# shellcheck source=ada/mlx_defaults.sh
+source "$ROOT/scripts/ada/mlx_defaults.sh"
+
 USER_DIR="$("$ROOT/scripts/resolve-vscode-user-dir.sh")"
 CHAT_MODELS="$USER_DIR/chatLanguageModels.json"
 HOST="${ADA_MLX_HOST:-127.0.0.1}"
@@ -54,21 +57,21 @@ ensure_node() {
 	fi
 }
 
+mlx_supports_vision() {
+	# shellcheck source=/dev/null
+	source "$ROOT/.venv-mlx/bin/activate" 2>/dev/null || return 1
+	export ADA_MLX_HOST="$HOST" ADA_MLX_PORT="$PORT"
+	python "$ROOT/scripts/ada/verify_mlx_vision.py" >/dev/null 2>&1
+}
+
 ensure_mlx_venv() {
-	if [[ ! -d "$ROOT/.venv-mlx" ]]; then
-		echo "Creating .venv-mlx and installing mlx-lm ..."
-		python3 -m venv "$ROOT/.venv-mlx"
-		# shellcheck source=/dev/null
-		source "$ROOT/.venv-mlx/bin/activate"
-		pip install -U pip mlx-lm
-	else
-		# shellcheck source=/dev/null
-		source "$ROOT/.venv-mlx/bin/activate"
-	fi
+	"$ROOT/scripts/ensure-mlx-venv.sh"
+	# shellcheck source=/dev/null
+	source "$ROOT/.venv-mlx/bin/activate"
 }
 
 ensure_chat_models() {
-	if [[ ! -f "$CHAT_MODELS" ]] || ! grep -q "Qwen2.5-VL-72B-Instruct" "$CHAT_MODELS" 2>/dev/null; then
+	if [[ ! -f "$CHAT_MODELS" ]] || ! grep -q "$ADA_MLX_BYOK_ID_MARKER" "$CHAT_MODELS" 2>/dev/null; then
 		echo "Running Step 1 setup (BYOK + settings) ..."
 		"$ROOT/scripts/install-step1.sh"
 	fi
@@ -81,13 +84,17 @@ ensure_chat_models() {
 
 start_mlx_if_needed() {
 	if mlx_healthy; then
-		echo "MLX server already running at http://${HOST}:${PORT}"
-		return 0
+		if mlx_supports_vision; then
+			echo "MLX-VLM server already running at http://${HOST}:${PORT} (vision OK)"
+			return 0
+		fi
+		echo "Replacing text-only mlx_lm server with mlx-vlm (vision) ..."
+		"$ROOT/scripts/stop-mlx-server.sh" || true
 	fi
 
-	echo "Starting MLX server in background (log: $MLX_LOG) ..."
+	echo "Starting MLX-VLM server in background (log: $MLX_LOG) ..."
 	: >"$MLX_LOG"
-	nohup env ADA_MLX_HOST="$HOST" ADA_MLX_PORT="$PORT" \
+	nohup env ADA_MLX_HOST="$HOST" ADA_MLX_PORT="$PORT" ADA_MLX_MODEL="${ADA_MLX_MODEL:-$ADA_MLX_MODEL_DEFAULT}" \
 		"$ROOT/scripts/serve-qwen.sh" >>"$MLX_LOG" 2>&1 &
 	MLX_PID=$!
 	echo "$MLX_PID" >"$MLX_PID_FILE"
@@ -101,8 +108,10 @@ ensure_chat_models
 start_mlx_if_needed
 
 echo "Launching adacode IDE ..."
-echo "  Chat model: Qwen2.5-VL-72B-Instruct (MLX 4-bit) → Other Models"
-echo "  Tip: use #filename in chat for file context; Agent mode for tools."
+echo "  Chat model: ${ADA_MLX_DISPLAY_NAME_DEFAULT} → Other Models"
+echo "  Vision: mlx-vlm server (image attach supported)"
+echo "  Image note: first reply can take 30-90s on Qwen VL 32B - wait for the response."
+echo "  Tip: use #filename in chat for file context; Ask mode for image Q&A, Agent for tools."
 echo ""
 
 export ADA_FORCE_BYOK=1
