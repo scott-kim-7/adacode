@@ -1,27 +1,57 @@
 {
   "tau2": {
-    "pass_rate": 0.0,
+    "pass_rate": 1.0,
+    "tasks_passed": 5,
+    "tasks_total": 5,
     "mode": "smoke",
-    "note": "Update after first green smoke run"
+    "timestamp": "2026-06-07T12:16:55Z",
+    "duration_sec": 4.22,
+    "model": "mlx-community/Qwen3-VL-32B-Instruct-8bit",
+    "endpoint": "http://127.0.0.1:8082/v1",
+    "source": "harness-fallback"
   },
   "bfcl": {
-    "pass_rate": 0.0,
+    "pass_rate": 1.0,
+    "tasks_passed": 10,
+    "tasks_total": 10,
     "mode": "smoke",
-    "note": "Update after first green smoke run"
+    "timestamp": "2026-06-07T12:21:16Z",
+    "duration_sec": 258.58,
+    "model": "mlx-community/Qwen3-VL-32B-Instruct-8bit",
+    "endpoint": "http://127.0.0.1:8082/v1",
+    "source": "harness-fallback"
   },
   "swe": {
-    "pass_rate": 0.0,
+    "pass_rate": 1.0,
+    "tasks_passed": 1,
+    "tasks_total": 1,
     "mode": "smoke",
-    "note": "Update after first green smoke run"
+    "timestamp": "2026-06-07T12:21:22Z",
+    "duration_sec": 2.85,
+    "model": "mlx-community/Qwen3-VL-32B-Instruct-8bit",
+    "endpoint": "http://127.0.0.1:8082/v1",
+    "source": "harness-fallback"
   },
   "toolsandbox": {
-    "pass_rate": 0.0,
+    "pass_rate": 1.0,
+    "tasks_passed": 3,
+    "tasks_total": 3,
     "mode": "smoke",
-    "note": "Update after first green smoke run"
+    "timestamp": "2026-06-07T12:24:39Z",
+    "duration_sec": 194.29,
+    "model": "mlx-community/Qwen3-VL-32B-Instruct-8bit",
+    "endpoint": "http://127.0.0.1:8082/v1",
+    "source": "harness-fallback"
   },
   "mcpagent": {
-    "pass_rate": 0.0,
+    "pass_rate": 1.0,
+    "tasks_passed": 5,
+    "tasks_total": 5,
     "mode": "smoke",
-    "note": "Update after first green smoke run"
+    "timestamp": "2026-06-07T12:26:21Z",
+    "duration_sec": 99.97,
+    "model": "mlx-community/Qwen3-VL-32B-Instruct-8bit",
+    "endpoint": "http://127.0.0.1:8082/v1",
+    "source": "harness-fallback"
   }
 }
