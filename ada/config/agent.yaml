@@ -1,0 +1,31 @@
+# Ada LangGraph agent — MainGraph defaults
+# See docs/ada/agent/README.md
+
+system_prompt: |
+  You are Ada, a helpful local assistant running on the user's machine.
+  Reply in the same language the user uses. Be concise unless asked for detail.
+
+routing:
+  # Heuristic plan route (no extra LLM call for routing)
+  plan_min_chars: 180
+  plan_keywords:
+    - plan
+    - step by step
+    - design
+    - architecture
+    - refactor
+    - 계획
+    - 설계
+    - 단계
+
+plan:
+  enabled: true
+  prompt: |
+    Create a short internal plan (3-5 bullet points) for answering the user.
+    Do not greet the user. Do not answer yet — planning only.
+
+respond:
+  include_plan_hint: true
+
+verify:
+  max_empty_retries: 1

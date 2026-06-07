@@ -17,7 +17,9 @@
 
 ```
 Browser → Open WebUI (Docker :3000)
-       → OPENAI_API_BASE_URL → MLX (:8080/v1)
+       → LangGraph agent API (:8082/v1)
+       → MainGraph (route / plan / respond)
+       → MLX (:8080/v1)
        → Qwen model
 ```
 
@@ -36,7 +38,8 @@ Browser → Open WebUI (Docker :3000)
 | `ADA_OPEN_WEBUI_PORT` | `3000` | 호스트 포트 |
 | `ADA_OPEN_WEBUI_CONTAINER` | `adacode-open-webui` | 컨테이너 이름 |
 | `ADA_MLX_MODEL` | (mlx_defaults.sh) | DEFAULT_MODELS |
-| `OPENAI_API_BASE_URL` | `host.docker.internal:8080/v1` | 컨테이너 → MLX |
+| `OPENAI_API_BASE_URL` | `host.docker.internal:8082/v1` | 컨테이너 → LangGraph agent |
+| `ADA_AGENT_PORT` | `8082` | agent API 포트 |
 
 Linux에서는 `172.17.0.1` 또는 호스트 IP로 자동 설정됩니다 (`serve-open-webui.sh`).
 
@@ -57,5 +60,10 @@ docker compose -f web/docker-compose.yml down
 
 ## LangGraph agent
 
-Open WebUI는 **MLX에 직접** 연결합니다. LangGraph `ada ada-agent` CLI는 터미널용입니다.  
-향후 Open WebUI ↔ Ada agent 연동은 FastAPI OpenAI shim으로 추가 가능합니다.
+Open WebUI 채팅은 **LangGraph MainGraph**를 거칩니다 (`scripts/ada_agent_server.py`, 포트 `:8082`).
+
+- plan 경로: 긴 질문·키워드(`계획`, `design` 등) → 내부 계획 후 답변
+- direct 경로: 짧은 질문 → 바로 답변
+- MLX 직접 연결(프록시 `:8081`)은 디버그용 — `./scripts/ensure-mlx-proxy.sh`
+
+터미널 REPL: `ada ada-agent`

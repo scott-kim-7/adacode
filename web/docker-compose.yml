@@ -7,13 +7,13 @@ services:
     environment:
       # OpenAI-compatible MLX connection (required for model list + chat)
       ENABLE_OPENAI_API: "true"
-      OPENAI_API_BASE_URL: ${OPENAI_API_BASE_URL:-http://host.docker.internal:8081/v1}
-      OPENAI_API_BASE_URLS: ${OPENAI_API_BASE_URL:-http://host.docker.internal:8081/v1}
+      OPENAI_API_BASE_URL: ${OPENAI_API_BASE_URL:-http://host.docker.internal:8082/v1}
+      OPENAI_API_BASE_URLS: ${OPENAI_API_BASE_URL:-http://host.docker.internal:8082/v1}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-local}
       OPENAI_API_KEYS: ${OPENAI_API_KEY:-local}
       # Shown when MLX is reachable; also pins default in fresh installs
       DEFAULT_MODELS: ${ADA_MLX_MODEL:-mlx-community/Qwen3-VL-32B-Instruct-8bit}
-      # Keep chat traffic on the backend proxy (8081), not browser → MLX direct
+      # Keep chat traffic on the LangGraph agent API (8082), not browser → MLX direct
       ENABLE_DIRECT_CONNECTIONS: "false"
       # Disable Ollama noise (we only use MLX OpenAI API)
       ENABLE_OLLAMA_API: "false"

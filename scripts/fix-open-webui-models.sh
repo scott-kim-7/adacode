@@ -9,7 +9,7 @@ source "$ROOT/scripts/ada/mlx_defaults.sh"
 MODEL="${ADA_MLX_MODEL:-$ADA_MLX_MODEL_DEFAULT}"
 HOST="${ADA_MLX_HOST:-127.0.0.1}"
 PORT="${ADA_MLX_PORT:-8080}"
-PROXY_PORT="${ADA_MLX_PROXY_PORT:-8081}"
+AGENT_PORT="${ADA_AGENT_PORT:-8082}"
 LOG="$ROOT/.ada-mlx-server.log"
 
 mlx_up() {
@@ -42,14 +42,14 @@ for item in json.load(sys.stdin)['data']:
     print(f\"  {item['id']}{mark}\")
 "
 
-"$ROOT/scripts/ensure-mlx-proxy.sh" --force
+"$ROOT/scripts/ensure-ada-agent-server.sh" --force
 
 export ADA_MLX_MODEL="$MODEL"
-export OPENAI_API_BASE_URL="http://host.docker.internal:${PROXY_PORT}/v1"
+export OPENAI_API_BASE_URL="http://host.docker.internal:${AGENT_PORT}/v1"
 export OPENAI_API_KEY=local
 
 echo ""
-echo "Recreating Open WebUI container (OpenAI URL → :${PROXY_PORT} proxy) ..."
+echo "Recreating Open WebUI container (OpenAI URL → :${AGENT_PORT} LangGraph agent) ..."
 docker compose -f "$ROOT/web/docker-compose.yml" up -d --force-recreate
 
 for i in $(seq 1 30); do
@@ -58,10 +58,10 @@ for i in $(seq 1 30); do
 done
 
 if docker exec "${ADA_OPEN_WEBUI_CONTAINER:-adacode-open-webui}" \
-	curl -sf --connect-timeout 5 "http://host.docker.internal:${PROXY_PORT}/v1/models" >/dev/null 2>&1; then
-	echo "Open WebUI → MLX proxy (:${PROXY_PORT}): OK"
+	curl -sf --connect-timeout 5 "http://host.docker.internal:${AGENT_PORT}/v1/models" >/dev/null 2>&1; then
+	echo "Open WebUI → LangGraph agent (:${AGENT_PORT}): OK"
 else
-	echo "Open WebUI → MLX proxy: FAILED (run ./scripts/ensure-mlx-proxy.sh)" >&2
+	echo "Open WebUI → agent API: FAILED (run ./scripts/ensure-ada-agent-server.sh)" >&2
 	exit 1
 fi
 
@@ -74,7 +74,7 @@ echo "  4. Pick: ${MODEL}"
 echo ""
 echo "If the list is still empty:"
 echo "  Admin (gear) → Settings → Connections → OpenAI"
-echo "    URL:  http://host.docker.internal:${PROXY_PORT}/v1"
+echo "    URL:  http://host.docker.internal:${AGENT_PORT}/v1"
 echo "    Key:  local  → Save → Refresh model list"
 echo ""
 echo "If replies are blank, start a NEW chat (+). Old chats may have saved empty answers."

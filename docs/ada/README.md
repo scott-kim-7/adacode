@@ -35,7 +35,7 @@
 | [web/README.md](web/README.md) | Open WebUI 설정·트러블슈팅 |
 | [step2/README.md](step2/README.md) | Model Registry, vault, Tri-Chat |
 | [VAULT.md](VAULT.md) | vault 정책 |
-| [DESIGN_PLAN.md](DESIGN_PLAN.md) | 기획 (일부 IDE 내용은 레거시) |
+| [agent/README.md](agent/README.md) | LangGraph MainGraph 설계 |
 
 ## North Star (web-only)
 

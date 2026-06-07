@@ -2,13 +2,19 @@
 
 ```
 ada/
-├── config/model_registry.yaml   # LLM 프로필 (chat_profile → MLX)
+├── config/
+│   ├── model_registry.yaml
+│   └── agent.yaml               # MainGraph system prompt / routing
 ├── src/ada/
-│   ├── agent/                   # LangGraph pass-through (CLI ada-agent)
+│   ├── agent/                   # LangGraph MainGraph (CLI ada-agent)
+│   │   ├── config.py            # agent.yaml
 │   │   ├── state.py
-│   │   ├── graph.py             # START → llm → END
+│   │   ├── nodes.py             # prepare → route → plan → respond → verify
+│   │   ├── graph.py
 │   │   ├── session.py
-│   │   └── llm.py               # profile → LLM callable
+│   │   ├── llm.py               # profile → LLM callable
+│   │   ├── openai_compat.py     # OpenAI messages ↔ MainGraph
+│   │   └── server.py            # FastAPI /v1/chat/completions (:8082)
 │   ├── llm.py                   # OpenAI-compatible HTTP client
 │   ├── registry.py
 │   ├── vault.py
@@ -22,9 +28,10 @@ ada/
 
 | 구성 | 경로 |
 |------|------|
-| Open WebUI | [`web/docker-compose.yml`](../web/docker-compose.yml) |
+| Open WebUI | [`web/docker-compose.yml`](../web/docker-compose.yml) → `:8082` agent API |
+| LangGraph agent | [`scripts/ensure-ada-agent-server.sh`](../scripts/ensure-ada-agent-server.sh) |
 | MLX 서버 | [`scripts/serve-qwen.sh`](../scripts/serve-qwen.sh) |
-| 원스톱 | [`scripts/serve-ada.sh`](../scripts/serve-ada.sh) |
+| 원스톱 | [`scripts/ada.sh`](../scripts/ada.sh) |
 
-Open WebUI는 LangGraph를 거치지 않고 MLX에 직접 연결합니다.  
-터미널에서 agent를 쓰려면 `ada ada-agent` (LangGraph CLI)를 사용합니다.
+Open WebUI → LangGraph MainGraph (`:8082`) → MLX (`:8080`).  
+터미널 REPL: `ada ada-agent` — [docs/ada/agent/README.md](../docs/ada/agent/README.md)

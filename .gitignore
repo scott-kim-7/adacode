@@ -9,6 +9,8 @@ ada/**/*.egg-info/
 .ada-mlx-proxy.log
 .ada-mlx-proxy.pid
 .ada-mlx-daemon.pid
+.ada-agent-server.log
+.ada-agent-server.pid
 .claude/
 .cache
 Thumbs.db

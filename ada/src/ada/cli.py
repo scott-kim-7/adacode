@@ -167,7 +167,7 @@ def build_parser() -> argparse.ArgumentParser:
 	p_tri.add_argument("--vault-password", help=argparse.SUPPRESS)
 	p_tri.set_defaults(func=cmd_tri_chat)
 
-	p_agent = sub.add_parser("ada-agent", help="Ada Agent pass-through (LangGraph MVP)")
+	p_agent = sub.add_parser("ada-agent", help="Ada Agent (LangGraph MainGraph CLI)")
 	p_agent.add_argument("--once", metavar="MSG", help="Run one user turn and exit")
 	p_agent.add_argument("--profile", help="Model registry profile (default: chat_profile)")
 	p_agent.add_argument("--vault-password", help=argparse.SUPPRESS)

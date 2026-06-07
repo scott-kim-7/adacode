@@ -31,7 +31,7 @@ if ! docker info >/dev/null 2>&1; then
 	exit 1
 fi
 
-PROXY_PORT="${ADA_MLX_PROXY_PORT:-8081}"
+AGENT_PORT="${ADA_AGENT_PORT:-8082}"
 
 if ! mlx_healthy; then
 	echo "MLX server is not running at $(mlx_url)" >&2
@@ -39,13 +39,13 @@ if ! mlx_healthy; then
 	exit 1
 fi
 
-"$ROOT/scripts/ensure-mlx-proxy.sh"
+"$ROOT/scripts/ensure-ada-agent-server.sh"
 
-OPENAI_BASE="http://host.docker.internal:${PROXY_PORT}/v1"
+OPENAI_BASE="http://host.docker.internal:${AGENT_PORT}/v1"
 if [[ "$(uname -s)" == "Linux" ]]; then
-	OPENAI_BASE="http://${MLX_HOST}:${PROXY_PORT}/v1"
+	OPENAI_BASE="http://${MLX_HOST}:${AGENT_PORT}/v1"
 	if [[ "$MLX_HOST" == "127.0.0.1" || "$MLX_HOST" == "localhost" ]]; then
-		OPENAI_BASE="http://172.17.0.1:${PROXY_PORT}/v1"
+		OPENAI_BASE="http://172.17.0.1:${AGENT_PORT}/v1"
 	fi
 fi
 
@@ -76,7 +76,7 @@ fi
 
 echo "Starting Open WebUI on http://127.0.0.1:${WEBUI_PORT}"
 echo "  compose: ${COMPOSE_FILE}"
-echo "  MLX API: ${OPENAI_BASE} (via Open WebUI compatibility proxy)"
+echo "  Agent API: ${OPENAI_BASE} (LangGraph → MLX)"
 echo "  model:   ${MODEL}"
 echo ""
 echo "First login: create a local account (data stays on your machine)."
@@ -98,11 +98,11 @@ for ((i = 1; i <= 60; i++)); do
 	fi
 done
 
-if docker exec "$CONTAINER_NAME" curl -sf --connect-timeout 5 "http://host.docker.internal:${PROXY_PORT}/v1/models" >/dev/null 2>&1; then
-	echo "Open WebUI → MLX proxy connectivity OK"
+if docker exec "$CONTAINER_NAME" curl -sf --connect-timeout 5 "http://host.docker.internal:${AGENT_PORT}/v1/models" >/dev/null 2>&1; then
+	echo "Open WebUI → LangGraph agent connectivity OK"
 else
-	echo "WARNING: Open WebUI cannot reach MLX proxy at host.docker.internal:${PROXY_PORT}" >&2
-	echo "Run: ./scripts/ensure-mlx-proxy.sh && ./scripts/restart-mlx.sh" >&2
+	echo "WARNING: Open WebUI cannot reach agent API at host.docker.internal:${AGENT_PORT}" >&2
+	echo "Run: ./scripts/ensure-ada-agent-server.sh && ./scripts/restart-mlx.sh" >&2
 fi
 
 if command -v open >/dev/null 2>&1; then
