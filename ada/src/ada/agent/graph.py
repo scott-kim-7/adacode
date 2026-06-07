@@ -17,6 +17,7 @@ from ada.agent.nodes import (
 	route_decision,
 	route_node,
 )
+from ada.agent.content import UserContent, content_is_empty, ensure_user_prompt
 from ada.agent.state import AgentState
 
 
@@ -79,20 +80,22 @@ def build_simple_agent_graph(
 
 
 def run_user_turn(
-	user_text: str,
+	user_content: UserContent,
 	history: list[BaseMessage],
 	llm_callable: Callable[[list[BaseMessage]], str],
 	config: AgentConfig | None = None,
 ) -> tuple[str, list[BaseMessage]]:
 	"""Append user message, run MainGraph, return assistant text and updated history."""
-	user_text = user_text.strip()
-	if not user_text:
+	if content_is_empty(user_content):
 		return "", history
 
-	compiled = build_main_agent_graph(llm_callable, config=config)
+	cfg = config or load_agent_config()
+	user_content = ensure_user_prompt(user_content, prompt=cfg.vision.image_only_prompt)
+
+	compiled = build_main_agent_graph(llm_callable, config=cfg)
 	result = compiled.invoke(
 		{
-			"messages": [*history, HumanMessage(content=user_text)],
+			"messages": [*history, HumanMessage(content=user_content)],
 			"empty_retries": 0,
 		}
 	)

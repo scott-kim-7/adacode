@@ -29,3 +29,6 @@ respond:
 
 verify:
   max_empty_retries: 1
+
+vision:
+  image_only_prompt: "Describe the image."

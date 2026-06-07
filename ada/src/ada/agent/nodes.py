@@ -1,19 +1,27 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from typing import Any
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
 from ada.agent.config import AgentConfig
+from ada.agent.content import UserContent, extract_text_from_content
 from ada.agent.state import AgentState, Route
 
 
-def _latest_user_text(messages: list[BaseMessage]) -> str:
+def _latest_user_content(messages: list[BaseMessage]) -> UserContent:
 	for message in reversed(messages):
 		if isinstance(message, HumanMessage):
 			content = message.content
+			if isinstance(content, list):
+				return content
 			return content if isinstance(content, str) else str(content)
 	return ""
+
+
+def _latest_user_text(messages: list[BaseMessage]) -> str:
+	return extract_text_from_content(_latest_user_content(messages)).strip()
 
 
 def prepare_node(config: AgentConfig) -> Callable[[AgentState], dict]:
@@ -59,10 +67,10 @@ def plan_node(
 	llm_callable: Callable[[list[BaseMessage]], str],
 ) -> Callable[[AgentState], dict]:
 	def plan(state: AgentState) -> dict:
-		user_text = _latest_user_text(state.get("messages") or [])
+		user_content = _latest_user_content(state.get("messages") or [])
 		plan_messages = [
 			SystemMessage(content=config.plan.prompt),
-			HumanMessage(content=user_text),
+			HumanMessage(content=user_content),
 		]
 		return {"plan": llm_callable(plan_messages).strip()}
 

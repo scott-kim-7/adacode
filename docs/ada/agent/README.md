@@ -54,6 +54,7 @@ ada/src/ada/agent/
 ├── graph.py     # build_main_agent_graph()
 ├── session.py   # REPL 세션
 ├── llm.py       # registry profile → LLM callable
+├── content.py   # multimodal OpenAI content parse/preserve
 ├── openai_compat.py  # OpenAI messages ↔ MainGraph
 └── server.py    # FastAPI /v1/chat/completions
 ```
@@ -86,6 +87,17 @@ Agent API 기동:
 ```
 
 Open WebUI Connections URL: `http://host.docker.internal:8082/v1` (키: `local`)
+
+## Vision (이미지 대화)
+
+Open WebUI가 보내는 `content: [{type:text}, {type:image_url}]` 형식을 agent API가 **그대로** MainGraph → MLX VLM까지 전달합니다.
+
+- `content.py` — `parse_openai_content`, `ensure_user_prompt` (이미지만 있을 때 기본 질문 추가)
+- `agent.yaml` → `vision.image_only_prompt`
+- plan 노드도 multimodal user content 수신 (이미지 기반 계획 가능)
+- `ADA_LLM_TIMEOUT` 기본 300s (VL prefill 지연)
+
+검증: `./scripts/verify-agent-vision.sh`
 
 ## 향후 확장 (DESIGN_PLAN 3그래프)
 

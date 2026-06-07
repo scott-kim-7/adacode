@@ -101,6 +101,8 @@ adacode fork에서는 **항상 허용** (`return true`). upstream VS Code/Copilo
 
 **수동 확인:** IDE 채팅에 이미지 첨부 → Qwen VL 모델 선택 → 설명 요청.
 
+**Open WebUI:** `./scripts/verify-agent-vision.sh` — agent API(:8082) multimodal smoke test.
+
 **참고:** VL 모델 첫 로드는 수 분·수십 GB RAM 사용. 텍스트만 필요하면 `mlx_lm`을 쓸 수 있지만 adacode 기본은 **mlx-vlm**입니다.
 
 ## 이미지 첨부 후 응답이 비어 있거나 오래 걸림

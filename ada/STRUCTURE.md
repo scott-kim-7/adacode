@@ -13,6 +13,7 @@ ada/
 │   │   ├── graph.py
 │   │   ├── session.py
 │   │   ├── llm.py               # profile → LLM callable
+│   │   ├── content.py           # multimodal content parse/preserve
 │   │   ├── openai_compat.py     # OpenAI messages ↔ MainGraph
 │   │   └── server.py            # FastAPI /v1/chat/completions (:8082)
 │   ├── llm.py                   # OpenAI-compatible HTTP client

@@ -2,17 +2,20 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from typing import Any
 
 import httpx
 
 from ada.registry import Profile
 from ada.vault import Vault, VaultError, prompt_password
 
+MessageContent = str | list[dict[str, Any]]
+
 
 @dataclass(frozen=True)
 class ChatMessage:
 	role: str
-	content: str
+	content: MessageContent
 	speaker: str = ""
 
 
@@ -20,7 +23,8 @@ class LLMClient:
 	def __init__(self, profile: Profile, api_key: str | None = None) -> None:
 		self.profile = profile
 		self.api_key = api_key or profile.api_key or "local"
-		self._client = httpx.Client(timeout=120.0)
+		timeout = float(os.environ.get("ADA_LLM_TIMEOUT", "300"))
+		self._client = httpx.Client(timeout=timeout)
 
 	def chat(self, messages: list[ChatMessage], max_tokens: int = 1024) -> str:
 		payload_messages = [

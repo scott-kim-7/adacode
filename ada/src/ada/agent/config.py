@@ -30,6 +30,11 @@ class VerifyConfig:
 	max_empty_retries: int = 1
 
 
+@dataclass(frozen=True)
+class VisionConfig:
+	image_only_prompt: str = "Describe the image."
+
+
 DEFAULT_SYSTEM_PROMPT = "You are Ada, a helpful assistant."
 
 
@@ -40,6 +45,7 @@ class AgentConfig:
 	plan: PlanConfig = field(default_factory=PlanConfig)
 	respond: RespondConfig = field(default_factory=RespondConfig)
 	verify: VerifyConfig = field(default_factory=VerifyConfig)
+	vision: VisionConfig = field(default_factory=VisionConfig)
 
 
 def _as_tuple(value: object, default: tuple[str, ...]) -> tuple[str, ...]:
@@ -61,6 +67,7 @@ def load_agent_config(path: Path | None = None) -> AgentConfig:
 	plan_raw = raw.get("plan") or {}
 	respond_raw = raw.get("respond") or {}
 	verify_raw = raw.get("verify") or {}
+	vision_raw = raw.get("vision") or {}
 
 	return AgentConfig(
 		system_prompt=str(raw.get("system_prompt") or DEFAULT_SYSTEM_PROMPT).strip(),
@@ -80,5 +87,10 @@ def load_agent_config(path: Path | None = None) -> AgentConfig:
 		),
 		verify=VerifyConfig(
 			max_empty_retries=int(verify_raw.get("max_empty_retries") or 1),
+		),
+		vision=VisionConfig(
+			image_only_prompt=str(
+				vision_raw.get("image_only_prompt") or VisionConfig().image_only_prompt
+			).strip(),
 		),
 	)

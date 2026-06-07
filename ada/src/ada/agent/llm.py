@@ -3,25 +3,30 @@ from __future__ import annotations
 import os
 from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
-from ada.llm import ChatMessage, LLMClient, make_client
+from ada.llm import ChatMessage, LLMClient, MessageContent, make_client
 from ada.registry import Profile, get_profile, load_registry
+
+
+def _to_message_content(message: BaseMessage) -> MessageContent:
+	content = message.content
+	if isinstance(content, list):
+		return content
+	return content if isinstance(content, str) else str(content)
 
 
 def _to_chat_messages(messages: list[BaseMessage]) -> list[ChatMessage]:
 	out: list[ChatMessage] = []
 	for message in messages:
 		if isinstance(message, HumanMessage):
-			content = message.content if isinstance(message.content, str) else str(message.content)
-			out.append(ChatMessage(role="user", content=content))
+			out.append(ChatMessage(role="user", content=_to_message_content(message)))
 		elif isinstance(message, AIMessage):
-			content = message.content if isinstance(message.content, str) else str(message.content)
-			out.append(ChatMessage(role="assistant", content=content))
+			out.append(ChatMessage(role="assistant", content=_to_message_content(message)))
 		elif isinstance(message, SystemMessage):
-			content = message.content if isinstance(message.content, str) else str(message.content)
-			out.append(ChatMessage(role="system", content=content))
+			out.append(ChatMessage(role="system", content=_to_message_content(message)))
 	return out
 
 

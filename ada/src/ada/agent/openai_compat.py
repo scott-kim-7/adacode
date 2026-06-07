@@ -8,26 +8,13 @@ from typing import Any
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
 from ada.agent.config import AgentConfig, load_agent_config
-from ada.agent.graph import build_simple_agent_graph, run_user_turn
-
-
-def _message_content(raw: Any) -> str:
-	if raw is None:
-		return ""
-	if isinstance(raw, str):
-		return raw
-	if isinstance(raw, list):
-		parts: list[str] = []
-		for item in raw:
-			if not isinstance(item, dict):
-				parts.append(str(item))
-				continue
-			if item.get("type") == "text":
-				parts.append(str(item.get("text") or ""))
-			elif "text" in item:
-				parts.append(str(item["text"]))
-		return "\n".join(part for part in parts if part)
-	return str(raw)
+from ada.agent.content import (
+	UserContent,
+	content_is_empty,
+	ensure_user_prompt,
+	extract_text_from_content,
+	parse_openai_content,
+)
 
 
 def openai_messages_to_langchain(messages: list[dict[str, Any]]) -> list[BaseMessage]:
@@ -36,24 +23,24 @@ def openai_messages_to_langchain(messages: list[dict[str, Any]]) -> list[BaseMes
 		if not isinstance(message, dict):
 			continue
 		role = str(message.get("role") or "user")
-		content = _message_content(message.get("content"))
+		raw_content = message.get("content")
 		if role == "system":
-			out.append(SystemMessage(content=content))
+			out.append(SystemMessage(content=extract_text_from_content(parse_openai_content(raw_content))))
 		elif role == "assistant":
-			out.append(AIMessage(content=content))
+			out.append(AIMessage(content=extract_text_from_content(parse_openai_content(raw_content))))
 		else:
-			out.append(HumanMessage(content=content))
+			out.append(HumanMessage(content=parse_openai_content(raw_content)))
 	return out
 
 
-def split_history_and_user(messages: list[dict[str, Any]]) -> tuple[list[BaseMessage], str]:
+def split_history_and_user(messages: list[dict[str, Any]]) -> tuple[list[BaseMessage], UserContent]:
 	converted = openai_messages_to_langchain(messages)
 	if not converted:
 		return [], ""
 	if isinstance(converted[-1], HumanMessage):
 		last = converted[-1]
-		content = last.content if isinstance(last.content, str) else str(last.content)
-		return converted[:-1], content.strip()
+		user_content = last.content if isinstance(last.content, (str, list)) else str(last.content)
+		return converted[:-1], user_content
 	return converted, ""
 
 
@@ -62,10 +49,12 @@ def run_chat_completion(
 	llm_callable: Callable[[list[BaseMessage]], str],
 	config: AgentConfig | None = None,
 ) -> str:
+	from ada.agent.graph import build_simple_agent_graph, run_user_turn
+
 	cfg = config or load_agent_config()
-	history, user_text = split_history_and_user(messages)
-	if user_text:
-		assistant_text, _ = run_user_turn(user_text, history, llm_callable, config=cfg)
+	history, user_content = split_history_and_user(messages)
+	if not content_is_empty(user_content):
+		assistant_text, _ = run_user_turn(user_content, history, llm_callable, config=cfg)
 		return assistant_text
 	converted = openai_messages_to_langchain(messages)
 	if not converted:

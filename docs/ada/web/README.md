@@ -57,6 +57,8 @@ docker compose -f web/docker-compose.yml down
 | MLX 연결 실패 | `./scripts/serve-qwen.sh` 실행 후 `curl http://127.0.0.1:8080/v1/models` |
 | 응답 매우 느림 | 32B 모델 — 첫 토큰까지 수십 초 가능 |
 | 모델 목록 비어 있음 | Open WebUI Settings에서 base URL / API key `local` 확인 |
+| **이미지 붙여넣기 무시됨** | agent API(:8082) multimodal passthrough 필요 — `./scripts/verify-agent-vision.sh` |
+| 이미지 응답 매우 느림 | Qwen VL 32B — 첫 토큰 30~90초 흔함. **새 채팅(+)** 사용 |
 
 ## LangGraph agent
 
@@ -64,6 +66,14 @@ Open WebUI 채팅은 **LangGraph MainGraph**를 거칩니다 (`scripts/ada_agent
 
 - plan 경로: 긴 질문·키워드(`계획`, `design` 등) → 내부 계획 후 답변
 - direct 경로: 짧은 질문 → 바로 답변
+- plan/respond 노드 모두 OpenAI `image_url` multimodal content 전달
 - MLX 직접 연결(프록시 `:8081`)은 디버그용 — `./scripts/ensure-mlx-proxy.sh`
+
+**Vision 검증:**
+
+```bash
+./scripts/verify-step1-vision.sh    # MLX :8080
+./scripts/verify-agent-vision.sh    # Agent :8082
+```
 
 터미널 REPL: `ada ada-agent`
