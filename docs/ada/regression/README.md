@@ -48,6 +48,16 @@ GitHub Actions `ada-pytest.yml`:
 1. `pytest ada/tests/regression/ -m regression`
 2. `pytest ada/tests/` (전체)
 
+## Tier 2 — Eval smoke
+
+Agent API `:8082` + MLX `:8080` 기동 후:
+
+```bash
+./scripts/verify-regression-eval-smoke.sh
+```
+
+벤치별 단독 실행: [`docs/ada/eval/README.md`](../eval/README.md)
+
 ## 새 regression 추가 기준
 
 - Open WebUI·LangGraph·MLX 연동에서 **한 번 깨졌던 버그** 또는 **North Star 경로**

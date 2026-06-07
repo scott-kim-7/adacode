@@ -1,0 +1,1 @@
+{"benchmark": "tau2", "mode": "smoke", "timestamp": "2026-06-06T00:00:00Z", "endpoint": "http://127.0.0.1:8082/v1", "model": "test-model", "tasks_total": 5, "tasks_passed": 3, "pass_rate": 0.6, "duration_sec": 1.0, "task_ids": ["mock-001"]}

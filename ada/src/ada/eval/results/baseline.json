@@ -1,0 +1,27 @@
+{
+  "tau2": {
+    "pass_rate": 0.0,
+    "mode": "smoke",
+    "note": "Update after first green smoke run"
+  },
+  "bfcl": {
+    "pass_rate": 0.0,
+    "mode": "smoke",
+    "note": "Update after first green smoke run"
+  },
+  "swe": {
+    "pass_rate": 0.0,
+    "mode": "smoke",
+    "note": "Update after first green smoke run"
+  },
+  "toolsandbox": {
+    "pass_rate": 0.0,
+    "mode": "smoke",
+    "note": "Update after first green smoke run"
+  },
+  "mcpagent": {
+    "pass_rate": 0.0,
+    "mode": "smoke",
+    "note": "Update after first green smoke run"
+  }
+}

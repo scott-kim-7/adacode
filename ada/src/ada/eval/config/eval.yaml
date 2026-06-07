@@ -1,0 +1,32 @@
+endpoint: http://127.0.0.1:8082/v1
+vendor_root: .eval/vendor
+baseline_path: ada/src/ada/eval/results/baseline.json
+model_profile: chat_profile
+baseline_delta: 0.05
+
+benchmarks:
+  tau2:
+    enabled: true
+    smoke:
+      domain: mock
+      num_tasks: 5
+    full:
+      domains: [airline, retail, telecom, mock]
+  bfcl:
+    enabled: true
+    smoke:
+      test_category: simple_python
+      num_entries: 10
+  swe:
+    enabled: true
+    smoke:
+      instance_ids: [django__django-11099]
+      max_workers: 1
+  toolsandbox:
+    enabled: true
+    smoke:
+      num_scenarios: 3
+  mcpagent:
+    enabled: true
+    smoke:
+      num_tasks: 5

@@ -27,6 +27,11 @@ When the user asks to run **regression** (e.g. "regression 돌려줘", "run regr
    - `./scripts/verify-step1-vision.sh` — MLX :8080
    - `./scripts/verify-agent-vision.sh` — Agent :8082 (requires stack up)
 
+3b. **Eval smoke** (only if user asks for "eval regression" / "벤치마크 smoke"):
+   - `./scripts/verify-regression-eval-smoke.sh` — requires Agent :8082 + MLX :8080
+   - Live benchmark scripts: `./scripts/eval/run-{bench}-smoke.sh`
+   - Reference: [`docs/ada/eval/README.md`](docs/ada/eval/README.md)
+
 4. **Full verify** (only if user asks for "전체 검증" / "verify-ada"):
    - `./scripts/verify-ada.sh` — regression + full pytest (64+) + compose smoke
 

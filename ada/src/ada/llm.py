@@ -15,8 +15,18 @@ MessageContent = str | list[dict[str, Any]]
 @dataclass(frozen=True)
 class ChatMessage:
 	role: str
-	content: MessageContent
+	content: MessageContent | None = None
+	tool_calls: tuple[dict[str, Any], ...] | None = None
+	tool_call_id: str | None = None
+	name: str | None = None
 	speaker: str = ""
+
+
+@dataclass(frozen=True)
+class ChatCompletionResult:
+	content: str | None
+	tool_calls: list[dict[str, Any]] | None
+	finish_reason: str
 
 
 class LLMClient:
@@ -26,26 +36,60 @@ class LLMClient:
 		timeout = float(os.environ.get("ADA_LLM_TIMEOUT", "300"))
 		self._client = httpx.Client(timeout=timeout)
 
-	def chat(self, messages: list[ChatMessage], max_tokens: int = 1024) -> str:
-		payload_messages = [
-			{"role": m.role, "content": m.content}
-			for m in messages
-		]
+	def _serialize_message(self, message: ChatMessage) -> dict[str, Any]:
+		payload: dict[str, Any] = {"role": message.role}
+		if message.content is not None:
+			payload["content"] = message.content
+		if message.tool_calls:
+			payload["tool_calls"] = list(message.tool_calls)
+		if message.tool_call_id:
+			payload["tool_call_id"] = message.tool_call_id
+		if message.name:
+			payload["name"] = message.name
+		return payload
+
+	def chat_completion(
+		self,
+		messages: list[ChatMessage],
+		*,
+		tools: list[dict[str, Any]] | None = None,
+		tool_choice: str | dict[str, Any] | None = None,
+		max_tokens: int = 1024,
+	) -> ChatCompletionResult:
+		payload_messages = [self._serialize_message(m) for m in messages]
 		url = f"{self.profile.base_url.rstrip('/')}/chat/completions"
 		headers = {
 			"Authorization": f"Bearer {self.api_key}",
 			"Content-Type": "application/json",
 		}
-		body = {
+		body: dict[str, Any] = {
 			"model": self.profile.model,
 			"messages": payload_messages,
 			"stream": False,
 			"max_tokens": max_tokens,
 		}
+		if tools:
+			body["tools"] = tools
+		if tool_choice is not None:
+			body["tool_choice"] = tool_choice
 		resp = self._client.post(url, headers=headers, json=body)
 		resp.raise_for_status()
 		data = resp.json()
-		return str(data["choices"][0]["message"]["content"])
+		choice = data["choices"][0]
+		message = choice.get("message") or {}
+		raw_tool_calls = message.get("tool_calls")
+		tool_calls = list(raw_tool_calls) if isinstance(raw_tool_calls, list) else None
+		content = message.get("content")
+		text = None if content is None else str(content)
+		return ChatCompletionResult(
+			content=text,
+			tool_calls=tool_calls,
+			finish_reason=str(choice.get("finish_reason") or "stop"),
+		)
+
+	def chat(self, messages: list[ChatMessage], max_tokens: int = 1024) -> str:
+		result = self.chat_completion(messages, max_tokens=max_tokens)
+		return result.content or ""
 
 	def close(self) -> None:
 		self._client.close()

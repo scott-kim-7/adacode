@@ -1,0 +1,39 @@
+name: Ada Eval Smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_swe:
+        description: Include SWE-bench smoke (requires Docker)
+        type: boolean
+        default: false
+
+jobs:
+  eval-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install ada
+        run: pip install -e "ada[dev]"
+      - name: Eval harness tests (mock, no stack)
+        run: pytest ada/tests/regression/eval/test_eval_harness.py -m eval_smoke -q
+      - name: Note
+        run: |
+          echo "Live eval smoke requires local Agent :8082 + MLX :8080."
+          echo "Run ./scripts/verify-regression-eval-smoke.sh on a Mac with the stack up."
+
+  swe-smoke:
+    if: inputs.run_swe
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install ada
+        run: pip install -e "ada[dev]"
+      - name: SWE smoke (Docker required)
+        run: pytest ada/tests/regression/eval/test_swe_smoke.py -m eval_smoke -q

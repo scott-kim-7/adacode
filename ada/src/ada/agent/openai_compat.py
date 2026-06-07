@@ -83,3 +83,55 @@ def build_chat_completion_response(model: str, content: str) -> dict[str, Any]:
 			"total_tokens": 0,
 		},
 	}
+
+
+def build_tool_chat_completion_response(
+	model: str,
+	assistant_message: dict[str, Any],
+	finish_reason: str,
+) -> dict[str, Any]:
+	now = int(time.time())
+	message = {"role": "assistant", **assistant_message}
+	if "role" in message and message["role"] != "assistant":
+		message["role"] = "assistant"
+	return {
+		"id": f"chatcmpl-{uuid.uuid4().hex[:24]}",
+		"object": "chat.completion",
+		"created": now,
+		"model": model,
+		"choices": [
+			{
+				"index": 0,
+				"message": message,
+				"finish_reason": finish_reason,
+			}
+		],
+		"usage": {
+			"prompt_tokens": 0,
+			"completion_tokens": 0,
+			"total_tokens": 0,
+		},
+	}
+
+
+def run_tool_chat_completion(
+	messages: list[dict[str, Any]],
+	tools: list[dict[str, Any]],
+	tool_llm_callable: Callable[..., Any],
+	config: AgentConfig | None = None,
+	*,
+	tool_choice: str | dict[str, Any] | None = None,
+	auto_execute: bool = False,
+) -> tuple[dict[str, Any], str]:
+	from ada.agent.tool_graph import run_tool_agent_turn
+
+	del tool_choice  # reserved for future passthrough
+	cfg = config or load_agent_config()
+	assistant, finish_reason = run_tool_agent_turn(
+		messages,
+		tools,
+		tool_llm_callable,
+		config=cfg,
+		auto_execute=auto_execute,
+	)
+	return assistant, finish_reason

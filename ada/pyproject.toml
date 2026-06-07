@@ -29,4 +29,5 @@ where = ["src"]
 testpaths = ["tests"]
 markers = [
 	"regression: release contract tests — run with pytest -m regression",
+	"eval_smoke: Agent eval smoke gates — run with pytest -m eval_smoke",
 ]

@@ -4,6 +4,16 @@ ada/.venv/
 ada/vault/secrets.vault.enc
 ada/**/__pycache__/
 ada/**/*.egg-info/
+.eval/
+ada/eval/results/*-smoke.json
+ada/eval/results/*-full.json
+ada/eval/results/schema-test.json
+ada/src/ada/eval/results/*-smoke.json
+ada/src/ada/eval/results/*-full.json
+ada/src/ada/eval/reports/history/
+ada/src/ada/eval/reports/.tmp-*.xml
+ada/src/ada/eval/reports/*-latest.json
+ada/src/ada/eval/reports/*-latest.md
 .ada-mlx-server.log
 .ada-mlx-server.pid
 .ada-mlx-proxy.log

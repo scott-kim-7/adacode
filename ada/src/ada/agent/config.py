@@ -35,6 +35,12 @@ class VisionConfig:
 	image_only_prompt: str = "Describe the image."
 
 
+@dataclass(frozen=True)
+class ToolsConfig:
+	max_rounds: int = 10
+	timeout_sec: int = 300
+
+
 DEFAULT_SYSTEM_PROMPT = "You are Ada, a helpful assistant."
 
 
@@ -46,6 +52,7 @@ class AgentConfig:
 	respond: RespondConfig = field(default_factory=RespondConfig)
 	verify: VerifyConfig = field(default_factory=VerifyConfig)
 	vision: VisionConfig = field(default_factory=VisionConfig)
+	tools: ToolsConfig = field(default_factory=ToolsConfig)
 
 
 def _as_tuple(value: object, default: tuple[str, ...]) -> tuple[str, ...]:
@@ -68,6 +75,7 @@ def load_agent_config(path: Path | None = None) -> AgentConfig:
 	respond_raw = raw.get("respond") or {}
 	verify_raw = raw.get("verify") or {}
 	vision_raw = raw.get("vision") or {}
+	tools_raw = raw.get("tools") or {}
 
 	return AgentConfig(
 		system_prompt=str(raw.get("system_prompt") or DEFAULT_SYSTEM_PROMPT).strip(),
@@ -92,5 +100,9 @@ def load_agent_config(path: Path | None = None) -> AgentConfig:
 			image_only_prompt=str(
 				vision_raw.get("image_only_prompt") or VisionConfig().image_only_prompt
 			).strip(),
+		),
+		tools=ToolsConfig(
+			max_rounds=int(tools_raw.get("max_rounds") or 10),
+			timeout_sec=int(tools_raw.get("timeout_sec") or 300),
 		),
 	)

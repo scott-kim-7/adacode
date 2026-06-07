@@ -7,7 +7,7 @@ from typing import Any
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
-from ada.llm import ChatMessage, LLMClient, MessageContent, make_client
+from ada.llm import ChatCompletionResult, ChatMessage, LLMClient, MessageContent, make_client
 from ada.registry import Profile, get_profile, load_registry
 
 
@@ -43,6 +43,24 @@ def make_llm_callable(
 		return client.chat(_to_chat_messages(messages))
 
 	return call_llm
+
+
+def make_tool_llm_callable(
+	profile: Profile,
+	vault_password: str | None = None,
+	client_factory: Callable[[Profile], LLMClient] | None = None,
+) -> Callable[[list[ChatMessage], list[dict[str, Any]] | None], ChatCompletionResult]:
+	if client_factory is None:
+		client_factory = lambda p: make_client(p, vault_password=vault_password)
+	client = client_factory(profile)
+
+	def call_with_tools(
+		messages: list[ChatMessage],
+		tools: list[dict[str, Any]] | None,
+	) -> ChatCompletionResult:
+		return client.chat_completion(messages, tools=tools)
+
+	return call_with_tools
 
 
 def load_profile_from_env() -> Profile:

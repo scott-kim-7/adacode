@@ -9,8 +9,13 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, Response
 
 from ada.agent.config import load_agent_config
-from ada.agent.llm import load_profile_from_env, make_llm_callable
-from ada.agent.openai_compat import build_chat_completion_response, run_chat_completion
+from ada.agent.llm import load_profile_from_env, make_llm_callable, make_tool_llm_callable
+from ada.agent.openai_compat import (
+	build_chat_completion_response,
+	build_tool_chat_completion_response,
+	run_chat_completion,
+	run_tool_chat_completion,
+)
 
 HOST = os.environ.get("ADA_AGENT_HOST", "127.0.0.1")
 PORT = int(os.environ.get("ADA_AGENT_PORT", "8082"))
@@ -22,6 +27,7 @@ def create_app() -> FastAPI:
 	cfg = load_agent_config()
 	profile = load_profile_from_env()
 	llm_callable = make_llm_callable(profile)
+	tool_llm_callable = make_tool_llm_callable(profile)
 	model_id = profile.model
 
 	app = FastAPI(title="Ada LangGraph Agent", version="0.1.0")
@@ -66,17 +72,31 @@ def create_app() -> FastAPI:
 		if stream_requested and FORCE_NON_STREAM:
 			stream_requested = False
 
+		tools = payload.get("tools")
+		has_tools = isinstance(tools, list) and len(tools) > 0
+
 		try:
-			content = await asyncio.to_thread(
-				run_chat_completion,
-				messages,
-				llm_callable,
-				cfg,
-			)
+			if has_tools:
+				assistant, finish_reason = await asyncio.to_thread(
+					run_tool_chat_completion,
+					messages,
+					tools,
+					tool_llm_callable,
+					cfg,
+					tool_choice=payload.get("tool_choice"),
+				)
+				body = build_tool_chat_completion_response(model, assistant, finish_reason)
+			else:
+				content = await asyncio.to_thread(
+					run_chat_completion,
+					messages,
+					llm_callable,
+					cfg,
+				)
+				body = build_chat_completion_response(model, content)
 		except Exception as exc:
 			raise HTTPException(status_code=502, detail=f"Agent failed: {exc}") from exc
 
-		body = build_chat_completion_response(model, content)
 		return JSONResponse(content=body)
 
 	return app

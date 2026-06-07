@@ -5,6 +5,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ADA="$ROOT/ada"
 VENV="$ADA/.venv"
+JUNIT="$ADA/src/ada/eval/reports/.tmp-contract-junit.xml"
 
 echo "=== Ada regression tests ==="
 
@@ -16,8 +17,13 @@ fi
 source "$VENV/bin/activate"
 pip install -q -e "$ADA[dev]"
 
-echo ""
-pytest "$ADA/tests/regression/" -m regression -q
+mkdir -p "$(dirname "$JUNIT")"
 
+echo ""
+pytest "$ADA/tests/regression/" -m regression -q --ignore="$ADA/tests/regression/eval" --junitxml="$JUNIT"
+
+echo ""
+REPORT="$(python -m ada.eval.harness.report contract --junit "$JUNIT")"
+echo "Report: $REPORT"
 echo ""
 echo "Regression passed."
