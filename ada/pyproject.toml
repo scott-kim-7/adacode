@@ -17,7 +17,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0"]
+dev = ["pytest>=8.0", "fastapi>=0.115", "uvicorn>=0.32"]
 
 [project.scripts]
 ada = "ada.cli:main"
@@ -27,3 +27,6 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+	"regression: release contract tests — run with pytest -m regression",
+]

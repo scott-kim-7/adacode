@@ -25,7 +25,9 @@
 ## 검증
 
 ```bash
-./scripts/verify-ada.sh
+./scripts/verify-regression.sh   # regression contract (22 tests)
+./scripts/verify-ada.sh          # regression + full unit + compose
+./scripts/verify-agent-vision.sh # 런타임 vision E2E (스택 기동 후)
 ```
 
 ## 문서
@@ -36,9 +38,10 @@
 | [step2/README.md](step2/README.md) | Model Registry, vault, Tri-Chat |
 | [VAULT.md](VAULT.md) | vault 정책 |
 | [agent/README.md](agent/README.md) | LangGraph MainGraph 설계 |
+| [regression/README.md](regression/README.md) | Regression test suite |
 
 ## North Star (web-only)
 
 1. 로컬 MLX + Open WebUI로 프라이빗 채팅
 2. `ada/` Python으로 registry·vault·Tri-Chat·agent CLI
-3. (향후) FastAPI shim으로 Open WebUI ↔ LangGraph agent 연동
+3. LangGraph agent API(:8082)로 Open WebUI ↔ MainGraph 연동

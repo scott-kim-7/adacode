@@ -22,5 +22,7 @@ jobs:
           python-version: '3.11'
       - name: Install ada
         run: pip install -e "ada[dev]"
-      - name: Pytest
+      - name: Regression tests
+        run: pytest ada/tests/regression/ -m regression -q
+      - name: Full pytest
         run: pytest ada/tests/ -q

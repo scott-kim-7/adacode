@@ -17,7 +17,8 @@ This repository is a **web-only** local AI platform. The main chat UI is **Open 
 ./scripts/install-step2.sh    # ada venv
 ./scripts/serve-qwen.sh       # MLX :8080
 ./scripts/serve-ada.sh        # Open WebUI :3000
-./scripts/verify-ada.sh       # pytest + compose smoke
+./scripts/verify-regression.sh  # regression contracts (22 tests)
+./scripts/verify-ada.sh         # regression + full pytest + compose smoke
 ```
 
 ## Python development

@@ -1,0 +1,35 @@
+---
+description: Run Ada regression suite on request and summarize results
+alwaysApply: true
+---
+
+# Ada regression on request
+
+When the user asks to run **regression** (e.g. "regression 돌려줘", "run regression", "회귀 테스트") during development:
+
+1. **Run** (do not only describe):
+   ```bash
+   ./scripts/verify-regression.sh
+   ```
+   From repo root. If the script fails, retry with:
+   ```bash
+   cd ada && source .venv/bin/activate && pip install -q -e ".[dev]" && pytest tests/regression/ -m regression -v
+   ```
+
+2. **Summarize** in Korean with this structure:
+   - **결과**: PASS / FAIL, N passed, duration
+   - **실행**: command used
+   - **범위**: `ada/tests/regression/` (22 contract tests — MainGraph, Agent API, stack config, vision)
+   - **경고**: any pytest warnings (e.g. fastapi/httpx deprecation)
+   - **실패 시**: failed test name, assertion/error excerpt, likely file to fix
+
+3. **Optional E2E** (only if user asks for runtime/stack or "E2E"):
+   - `./scripts/verify-step1-vision.sh` — MLX :8080
+   - `./scripts/verify-agent-vision.sh` — Agent :8082 (requires stack up)
+
+4. **Full verify** (only if user asks for "전체 검증" / "verify-ada"):
+   - `./scripts/verify-ada.sh` — regression + full pytest (64+) + compose smoke
+
+Do not skip running the command. Do not commit unless the user explicitly asks.
+
+Reference: [`docs/ada/regression/README.md`](docs/ada/regression/README.md)

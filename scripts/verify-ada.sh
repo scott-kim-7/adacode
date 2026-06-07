@@ -18,15 +18,19 @@ source "$VENV/bin/activate"
 pip install -q -e "$ADA[dev]"
 
 echo ""
-echo "[1/3] Python tests"
+echo "[1/4] Regression tests"
+pytest "$ADA/tests/regression/" -m regression -q
+
+echo ""
+echo "[2/4] Full Python tests"
 pytest "$ADA/tests/" -q
 
 echo ""
-echo "[2/3] Package import"
+echo "[3/4] Package import"
 python -c "from ada.agent import AgentSession; from ada.registry import load_registry; print('ada OK')"
 
 echo ""
-echo "[3/3] Open WebUI compose"
+echo "[4/4] Open WebUI compose"
 if command -v docker >/dev/null 2>&1; then
 	docker compose -f "$COMPOSE_FILE" config >/dev/null
 	echo "docker compose OK"
