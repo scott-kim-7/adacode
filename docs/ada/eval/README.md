@@ -2,13 +2,42 @@
 
 LangGraph Agent API (`:8082`) 대상 업계 벤치마크 smoke/full 실행 가이드.
 
+**구현 상세:** [BENCHMARKS.md](./BENCHMARKS.md) · **5종 소개·실행:** [REGRESSION_BENCHMARKS.md](./REGRESSION_BENCHMARKS.md)
+
 ## Tier 구조
 
 | Tier | 명령 | CI | 전제 |
 |------|------|-----|------|
 | Contract | `./scripts/verify-regression.sh` | 항상 | 없음 |
 | Eval smoke | `./scripts/verify-regression-eval-smoke.sh` | `ada-eval-smoke.yml` (dispatch) | Agent + MLX |
+| **Full regression** | `./scripts/verify-regression-full.sh` | 로컬 | Agent + MLX |
 | Eval full | `./scripts/eval/run-*-full.sh` | 없음 | 로컬/nightly |
+
+## Full regression (한방)
+
+Contract + 벤치 5개 + eval pytest + 통합 리포트:
+
+```bash
+./scripts/ada.sh start
+./scripts/verify-regression-full.sh
+./scripts/verify-regression-full.sh --update-baseline   # baseline.json 갱신
+./scripts/verify-regression-full.sh --start-stack       # 스택 자동 기동
+```
+
+**산출물:** `ada/src/ada/eval/reports/full-regression-latest.md`
+
+## 로그 (디버깅)
+
+모든 eval 실행은 로그를 저장합니다.
+
+| 종류 | 경로 |
+|------|------|
+| Full regression 세션 | `ada/src/ada/eval/logs/latest-full-regression-<mode>.log` |
+| 벤치마크별 | `ada/src/ada/eval/logs/benchmarks/<timestamp>-<bench>-<mode>.log` |
+| Vendor subprocess | `ada/src/ada/eval/logs/subprocess/<timestamp>-*.log` |
+
+결과 JSON의 `extra.fallback_reason`에 vendor 미실행·실패 사유가 기록됩니다.  
+`--benchmark-mode full`이 빠르게 끝나면 **fallback**으로 smoke급 harness만 돈 것입니다.
 
 ## 사전 준비
 

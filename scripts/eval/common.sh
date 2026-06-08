@@ -42,6 +42,11 @@ import json
 path = results_dir() / "${benchmark}-${mode}.json"
 payload = json.loads(path.read_text(encoding="utf-8"))
 report = write_benchmark_report(payload)
+extra = payload.get("extra") or {}
+if extra.get("fallback_reason"):
+    print(f"WARN: fallback — {extra['fallback_reason']}", flush=True)
+if extra.get("benchmark_log"):
+    print(f"Log: {extra['benchmark_log']}", flush=True)
 print(f"Report: {report}")
 PY
 }

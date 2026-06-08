@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 import json
+import os
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from ada.eval.harness.config import eval_base_url, results_dir
+from ada.eval.harness.config import baseline_path, eval_base_url, results_dir
 from ada.eval.harness.results import compare_baseline, load_baseline, validate_result_schema
+from ada.eval.harness.run_log import logs_dir
 from ada.eval.harness.stack_check import stack_status
 
 BENCHMARKS = ("tau2", "bfcl", "swe", "toolsandbox", "mcpagent")
@@ -156,7 +158,10 @@ def _format_benchmark_rows(results: list[dict[str, Any]]) -> list[str]:
 		base_rate = baseline.get("pass_rate", "—")
 		extra = payload.get("extra") if isinstance(payload.get("extra"), dict) else {}
 		source = extra.get("source") or payload.get("source") or ""
+		fallback = extra.get("fallback_reason") or ""
 		source_note = f" ({source})" if source else ""
+		if fallback:
+			source_note += " ⚠ fallback"
 		lines.append(
 			f"| {label}{source_note} | {mode} | {passed} | {total} | {rate:.1%} | {base_rate} | {_status_icon(ok)} | {duration:.1f}s |"
 		)
@@ -376,17 +381,179 @@ def write_summary_report() -> Path:
 	return md_path
 
 
+def update_snapshot_from_results(*, mode: str = "smoke", update_baseline: bool = False) -> Path:
+	"""Refresh snapshot JSON from latest benchmark result files."""
+	benchmarks = collect_benchmark_results(mode)
+	snapshot: dict[str, Any] = {
+		"recorded_at": _now_iso(),
+		"stack": stack_status(),
+		"mode": mode,
+		"benchmarks": {},
+	}
+	baseline: dict[str, Any] = load_baseline() if update_baseline else {}
+
+	for payload in benchmarks:
+		name = str(payload.get("benchmark") or "")
+		entry = {
+			"pass_rate": payload.get("pass_rate"),
+			"tasks_passed": payload.get("tasks_passed"),
+			"tasks_total": payload.get("tasks_total"),
+			"mode": payload.get("mode"),
+			"timestamp": payload.get("timestamp"),
+			"duration_sec": payload.get("duration_sec"),
+			"model": payload.get("model"),
+			"endpoint": payload.get("endpoint"),
+			"source": payload.get("source")
+			or (payload.get("extra") or {}).get("source", "unknown"),
+		}
+		snapshot["benchmarks"][name] = entry
+		if update_baseline and name:
+			baseline[name] = entry
+
+	snapshot_path = results_dir() / f"snapshot-{mode}-latest.json"
+	snapshot_path.write_text(json.dumps(snapshot, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+	if update_baseline:
+		baseline_path().write_text(json.dumps(baseline, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+	return snapshot_path
+
+
+def write_full_regression_report(
+	*,
+	contract_junit: Path | None = None,
+	eval_junit: Path | None = None,
+	benchmark_mode: str = "smoke",
+	started_at: str | None = None,
+	total_duration_sec: float | None = None,
+	steps: list[dict[str, Any]] | None = None,
+	update_baseline: bool = False,
+) -> Path:
+	contract = parse_junit_xml(contract_junit) if contract_junit and contract_junit.is_file() else None
+	eval_summary = parse_junit_xml(eval_junit) if eval_junit and eval_junit.is_file() else None
+	benchmarks = collect_benchmark_results(benchmark_mode)
+
+	benchmark_ok = all(
+		compare_baseline(str(b["benchmark"]), float(b["pass_rate"]))[0] for b in benchmarks
+	) if benchmarks else True
+	contract_ok = contract.status == "PASS" if contract else True
+	eval_ok = eval_summary.status == "PASS" if eval_summary else True
+	steps_ok = all(step.get("status") == "PASS" for step in (steps or []))
+	overall = "PASS" if contract_ok and eval_ok and benchmark_ok and steps_ok else "FAIL"
+
+	snapshot_path = update_snapshot_from_results(mode=benchmark_mode, update_baseline=update_baseline)
+
+	lines = [
+		"# Ada Full Regression Report",
+		"",
+		f"**생성 시각:** {_now_iso()}  ",
+		f"**시작 시각:** {started_at or '—'}  ",
+		f"**종합 결과:** **{overall}**  ",
+	]
+	if total_duration_sec is not None:
+		lines.append(f"**총 소요 시간:** {total_duration_sec:.1f}s ({total_duration_sec / 60:.1f}min)  ")
+	lines.extend(["", "## Tier 요약", "", "| Tier | Suite | 결과 |", "|------|-------|------|"])
+	if contract:
+		lines.append(f"| 1 | Contract regression | **{contract.status}** |")
+	if eval_summary:
+		lines.append(f"| 2 | Eval pytest ({benchmark_mode}) | **{eval_summary.status}** |")
+	lines.append(f"| 3 | Benchmarks ×5 ({benchmark_mode}) | **{'PASS' if benchmark_ok else 'FAIL'}** |")
+	lines.append("")
+
+	if steps:
+		lines.extend(["## 실행 단계", "", "| # | 단계 | 결과 | 소요 |", "|---|------|------|------|"])
+		for idx, step in enumerate(steps, start=1):
+			lines.append(
+				f"| {idx} | {step.get('name', '?')} | **{step.get('status', '?')}** | {step.get('duration_sec', '—')}s |"
+			)
+		if any(step.get("error") for step in steps):
+			lines.extend(["", "### 오류", ""])
+			for step in steps:
+				if step.get("error"):
+					lines.append(f"- **{step.get('name')}**: `{step['error']}`")
+		lines.append("")
+
+	lines.extend(_format_stack_section())
+	lines.extend([f"## 벤치마크 ({benchmark_mode})", ""])
+	lines.extend(_format_benchmark_rows(benchmarks))
+	fallbacks = [
+		(str(b.get("benchmark")), (b.get("extra") or {}).get("fallback_reason"), (b.get("extra") or {}).get("benchmark_log"))
+		for b in benchmarks
+		if isinstance(b.get("extra"), dict) and (b.get("extra") or {}).get("fallback_reason")
+	]
+	if fallbacks:
+		lines.extend(["", "### Fallback 경고 (vendor 미실행 또는 실패)", ""])
+		for name, reason, log_path in fallbacks:
+			label = BENCHMARK_LABELS.get(name, name)
+			lines.append(f"- **{label}**: {reason}")
+			if log_path:
+				lines.append(f"  - log: `{log_path}`")
+		lines.append("")
+
+	if contract:
+		lines.extend(["", "## Contract Pytest", ""])
+		lines.extend(_format_pytest_section(contract)[2:])  # skip header duplicate
+
+	if eval_summary:
+		lines.extend(["", "## Eval Pytest", ""])
+		lines.extend(_format_pytest_section(eval_summary)[2:])
+
+	lines.extend([
+		"",
+		"## 산출물",
+		"",
+		f"- Snapshot: `{snapshot_path}`",
+		f"- Summary: `{reports_dir()}/summary-latest.md`",
+		f"- Baseline: `{baseline_path()}`",
+		f"- Session log: `{os.environ.get('ADA_EVAL_SESSION_LOG', '—')}`",
+		f"- Logs dir: `{logs_dir()}`",
+		"",
+		"## 재실행",
+		"",
+		"```bash",
+		"./scripts/verify-regression-full.sh",
+		"./scripts/verify-regression-full.sh --benchmark-mode full   # 며칠 소요",
+		"./scripts/verify-regression-full.sh --start-stack --update-baseline",
+		"```",
+		"",
+	])
+
+	meta = {
+		"suite": "full-regression",
+		"timestamp": _now_iso(),
+		"started_at": started_at,
+		"status": overall,
+		"benchmark_mode": benchmark_mode,
+		"total_duration_sec": total_duration_sec,
+		"contract": contract.__dict__ if contract else None,
+		"eval_pytest": eval_summary.__dict__ if eval_summary else None,
+		"benchmarks": benchmarks,
+		"steps": steps or [],
+		"snapshot": str(snapshot_path),
+		"stack": stack_status(),
+	}
+	md_path, json_path = _write_report_files("full-regression", "\n".join(lines), meta)
+	write_summary_report()
+	return md_path
+
+
 def main() -> int:
 	import argparse
 
 	parser = argparse.ArgumentParser(description="Generate Ada eval/regression reports")
 	parser.add_argument(
 		"suite",
-		choices=("contract", "eval-smoke", "summary", "benchmark"),
+		choices=("contract", "eval-smoke", "summary", "benchmark", "full-regression"),
 		help="Report type to generate",
 	)
 	parser.add_argument("--junit", type=Path, help="Pytest JUnit XML path")
+	parser.add_argument("--eval-junit", type=Path, help="Eval pytest JUnit XML (full-regression)")
 	parser.add_argument("--result", type=Path, help="Benchmark result JSON (for benchmark suite)")
+	parser.add_argument("--benchmark-mode", default="smoke", choices=("smoke", "full"))
+	parser.add_argument("--started-at", default="")
+	parser.add_argument("--total-duration", type=float, default=0.0)
+	parser.add_argument("--steps-json", type=Path, help="Step log JSON (full-regression)")
+	parser.add_argument("--update-baseline", action="store_true")
 	args = parser.parse_args()
 
 	if args.suite == "contract":
@@ -395,6 +562,20 @@ def main() -> int:
 		path = write_eval_smoke_report(junit_path=args.junit)
 	elif args.suite == "summary":
 		path = write_summary_report()
+	elif args.suite == "full-regression":
+		steps: list[dict[str, Any]] = []
+		if args.steps_json and args.steps_json.is_file():
+			raw = json.loads(args.steps_json.read_text(encoding="utf-8"))
+			steps = raw if isinstance(raw, list) else []
+		path = write_full_regression_report(
+			contract_junit=args.junit,
+			eval_junit=args.eval_junit,
+			benchmark_mode=args.benchmark_mode,
+			started_at=args.started_at or None,
+			total_duration_sec=args.total_duration or None,
+			steps=steps,
+			update_baseline=args.update_baseline,
+		)
 	else:
 		if not args.result or not args.result.is_file():
 			raise SystemExit("--result required for benchmark suite")

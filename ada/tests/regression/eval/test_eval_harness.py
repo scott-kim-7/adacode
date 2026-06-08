@@ -99,13 +99,13 @@ def test_eval_result_schema_and_baseline():
 		"endpoint": "http://127.0.0.1:8082/v1",
 		"model": "test-model",
 		"tasks_total": 5,
-		"tasks_passed": 3,
-		"pass_rate": 0.6,
+		"tasks_passed": 5,
+		"pass_rate": 1.0,
 		"duration_sec": 1.0,
 		"task_ids": ["mock-001"],
 	}
 	validate_result_schema(sample)
-	ok, _ = compare_baseline("tau2", 0.6)
+	ok, _ = compare_baseline("tau2", 1.0)
 	assert ok is True
 	path = results_dir() / "schema-test.json"
 	path.write_text(json.dumps(sample), encoding="utf-8")

@@ -12,11 +12,15 @@ benchmarks:
       num_tasks: 5
     full:
       domains: [airline, retail, telecom, mock]
+      num_tasks: 50
   bfcl:
     enabled: true
     smoke:
       test_category: simple_python
       num_entries: 10
+    full:
+      test_category: simple_python
+      num_entries: 100
   swe:
     enabled: true
     smoke:
@@ -26,7 +30,11 @@ benchmarks:
     enabled: true
     smoke:
       num_scenarios: 3
+    full:
+      num_scenarios: 30
   mcpagent:
     enabled: true
     smoke:
       num_tasks: 5
+    full:
+      num_tasks: 50

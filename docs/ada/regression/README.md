@@ -56,7 +56,17 @@ Agent API `:8082` + MLX `:8080` 기동 후:
 ./scripts/verify-regression-eval-smoke.sh
 ```
 
-벤치별 단독 실행: [`docs/ada/eval/README.md`](../eval/README.md)
+## Tier 3 — Full regression (한방)
+
+Contract + 벤치 5개 + eval pytest + 통합 리포트:
+
+```bash
+./scripts/ada.sh start
+./scripts/verify-regression-full.sh
+./scripts/verify-regression-full.sh --update-baseline   # baseline 갱신
+```
+
+벤치별 단독 실행: [REGRESSION_BENCHMARKS.md](../eval/REGRESSION_BENCHMARKS.md) · [README.md](../eval/README.md)
 
 ## 새 regression 추가 기준
 
