@@ -260,7 +260,7 @@ export ADA_MCPAGENTBENCH_REPO=<url>   # MCPAgentBench (선택)
   "mode": "smoke",
   "timestamp": "ISO8601",
   "endpoint": "http://127.0.0.1:8082/v1",
-  "model": "mlx-community/Qwen3-VL-32B-Instruct-8bit",
+  "model": "openapi-resolved",
   "tasks_total": 5,
   "tasks_passed": 5,
   "pass_rate": 1.0,

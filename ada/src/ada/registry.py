@@ -15,7 +15,6 @@ class Profile:
 	label: str
 	provider: str
 	base_url: str
-	model: str
 	api_key: str | None = None
 	api_key_vault: str | None = None
 	tool_calling: bool = False
@@ -41,7 +40,6 @@ def _parse_profile(name: str, raw: dict[str, Any]) -> Profile:
 		label=str(raw.get("label", name)),
 		provider=str(raw.get("provider", "openai-compatible")),
 		base_url=str(raw["base_url"]),
-		model=str(raw["model"]),
 		api_key=raw.get("api_key"),
 		api_key_vault=raw.get("api_key_vault"),
 		tool_calling=bool(raw.get("tool_calling", False)),

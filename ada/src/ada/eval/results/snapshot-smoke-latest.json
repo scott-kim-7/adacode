@@ -1,10 +1,10 @@
 {
-  "recorded_at": "2026-06-07T12:26:52Z",
+  "recorded_at": "2026-06-07T12:55:14Z",
   "stack": {
-    "agent": "http://127.0.0.1:8082/v1",
-    "mlx": "http://127.0.0.1:8080/v1"
+    "agent_reachable": true,
+    "mlx_reachable": true,
+    "endpoint": "http://127.0.0.1:8082/v1"
   },
-  "model": "mlx-community/Qwen3-VL-32B-Instruct-8bit",
   "mode": "smoke",
   "benchmarks": {
     "tau2": {
@@ -12,9 +12,9 @@
       "tasks_passed": 5,
       "tasks_total": 5,
       "mode": "smoke",
-      "timestamp": "2026-06-07T12:16:55Z",
-      "duration_sec": 4.22,
-      "model": "mlx-community/Qwen3-VL-32B-Instruct-8bit",
+      "timestamp": "2026-06-07T12:52:54Z",
+      "duration_sec": 4.7,
+      "model": "openapi-resolved",
       "endpoint": "http://127.0.0.1:8082/v1",
       "source": "harness-fallback"
     },
@@ -23,9 +23,9 @@
       "tasks_passed": 10,
       "tasks_total": 10,
       "mode": "smoke",
-      "timestamp": "2026-06-07T12:21:16Z",
-      "duration_sec": 258.58,
-      "model": "mlx-community/Qwen3-VL-32B-Instruct-8bit",
+      "timestamp": "2026-06-07T12:51:42Z",
+      "duration_sec": 139.58,
+      "model": "openapi-resolved",
       "endpoint": "http://127.0.0.1:8082/v1",
       "source": "harness-fallback"
     },
@@ -34,9 +34,9 @@
       "tasks_passed": 1,
       "tasks_total": 1,
       "mode": "smoke",
-      "timestamp": "2026-06-07T12:21:22Z",
-      "duration_sec": 2.85,
-      "model": "mlx-community/Qwen3-VL-32B-Instruct-8bit",
+      "timestamp": "2026-06-07T12:52:47Z",
+      "duration_sec": 3.12,
+      "model": "openapi-resolved",
       "endpoint": "http://127.0.0.1:8082/v1",
       "source": "harness-fallback"
     },
@@ -45,9 +45,9 @@
       "tasks_passed": 3,
       "tasks_total": 3,
       "mode": "smoke",
-      "timestamp": "2026-06-07T12:24:39Z",
-      "duration_sec": 194.29,
-      "model": "mlx-community/Qwen3-VL-32B-Instruct-8bit",
+      "timestamp": "2026-06-07T12:55:14Z",
+      "duration_sec": 136.91,
+      "model": "openapi-resolved",
       "endpoint": "http://127.0.0.1:8082/v1",
       "source": "harness-fallback"
     },
@@ -56,9 +56,9 @@
       "tasks_passed": 5,
       "tasks_total": 5,
       "mode": "smoke",
-      "timestamp": "2026-06-07T12:26:21Z",
-      "duration_sec": 99.97,
-      "model": "mlx-community/Qwen3-VL-32B-Instruct-8bit",
+      "timestamp": "2026-06-07T12:52:42Z",
+      "duration_sec": 58.3,
+      "model": "openapi-resolved",
       "endpoint": "http://127.0.0.1:8082/v1",
       "source": "harness-fallback"
     }

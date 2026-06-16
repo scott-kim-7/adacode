@@ -6,18 +6,12 @@ from pathlib import Path
 from typing import Any
 
 from ada.eval.adapters._common import annotate_result, begin_benchmark, save_benchmark_result
+from ada.eval.adapters._model import resolved_eval_model
 from ada.eval.harness.agent_client import AgentEvalClient
 from ada.eval.harness.config import eval_base_url, load_eval_config, results_dir, vendor_root
 from ada.eval.harness.mcp_client import openai_tools_from_mcp
 from ada.eval.harness.results import make_result
 from ada.eval.harness.run_log import log_line
-from ada.registry import get_profile, load_registry
-
-
-def _model_name() -> str:
-	cfg = load_eval_config()
-	profile_name = os.environ.get("ADA_AGENT_PROFILE") or str(cfg.get("model_profile") or "chat_profile")
-	return get_profile(load_registry(), profile_name).model
 
 
 def _sample_mcp_tools() -> list[dict[str, Any]]:
@@ -71,7 +65,7 @@ def _fallback(num_tasks: int, mode: str) -> dict[str, Any]:
 		"mcpagent",
 		mode,
 		endpoint=eval_base_url(),
-		model=_model_name(),
+		model=resolved_eval_model(),
 		tasks_total=num_tasks,
 		tasks_passed=passed,
 		duration_sec=time.monotonic() - start,

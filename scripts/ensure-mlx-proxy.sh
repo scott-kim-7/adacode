@@ -47,11 +47,12 @@ proxy_up() {
 }
 
 proxy_stream_ok() {
-	local out
+	local model out
+	model="$(curl -sf "http://${MLX_HOST}:${MLX_PORT}/v1/models" | python3 -c "import json,sys; print(json.load(sys.stdin)['data'][0]['id'])")"
 	out="$(curl -s -N -m 120 "http://${MLX_HOST}:${PROXY_PORT}/v1/chat/completions" \
 		-H "Authorization: Bearer local" \
 		-H "Content-Type: application/json" \
-		-d "{\"model\":\"${ADA_MLX_MODEL:-$ADA_MLX_MODEL_DEFAULT}\",\"messages\":[{\"role\":\"user\",\"content\":\"ping\"}],\"max_tokens\":8,\"stream\":true}" \
+		-d "{\"model\":\"${model}\",\"messages\":[{\"role\":\"user\",\"content\":\"ping\"}],\"max_tokens\":8,\"stream\":true}" \
 		2>/dev/null || true)"
 	# Buffered mode returns JSON even when stream=true was requested.
 	if [[ "$out" == *'"message"'* && "$out" == *'"content"'* ]]; then
@@ -71,7 +72,7 @@ stop_proxy() {
 
 if ! mlx_up; then
 	echo "MLX not running at http://${MLX_HOST}:${MLX_PORT}" >&2
-	echo "Start: ./scripts/restart-mlx.sh" >&2
+	echo "Start the LLM server on port ${MLX_PORT} before continuing." >&2
 	exit 1
 fi
 

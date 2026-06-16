@@ -36,3 +36,7 @@ vision:
 tools:
   max_rounds: 10
   timeout_sec: 300
+
+stream:
+  # plan_fallback_tags: true → plan in … content; false → reasoning_content SSE
+  plan_fallback_tags: true

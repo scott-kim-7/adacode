@@ -8,6 +8,7 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, System
 from ada.agent.config import AgentConfig
 from ada.agent.content import UserContent, extract_text_from_content
 from ada.agent.state import AgentState, Route
+from ada.agent.stream_sink import StreamContext
 
 
 def _latest_user_content(messages: list[BaseMessage]) -> UserContent:
@@ -65,6 +66,7 @@ def route_node(config: AgentConfig) -> Callable[[AgentState], dict]:
 def plan_node(
 	config: AgentConfig,
 	llm_callable: Callable[[list[BaseMessage]], str],
+	stream_context: StreamContext | None = None,
 ) -> Callable[[AgentState], dict]:
 	def plan(state: AgentState) -> dict:
 		user_content = _latest_user_content(state.get("messages") or [])
@@ -72,7 +74,14 @@ def plan_node(
 			SystemMessage(content=config.plan.prompt),
 			HumanMessage(content=user_content),
 		]
-		return {"plan": llm_callable(plan_messages).strip()}
+		if stream_context is not None:
+			stream_context.begin_plan_stream()
+		try:
+			plan_text = llm_callable(plan_messages).strip()
+		finally:
+			if stream_context is not None:
+				stream_context.end_llm_stream()
+		return {"plan": plan_text}
 
 	return plan
 
@@ -80,6 +89,7 @@ def plan_node(
 def respond_node(
 	config: AgentConfig,
 	llm_callable: Callable[[list[BaseMessage]], str],
+	stream_context: StreamContext | None = None,
 ) -> Callable[[AgentState], dict]:
 	def respond(state: AgentState) -> dict:
 		messages = list(state.get("messages") or [])
@@ -95,7 +105,14 @@ def respond_node(
 				*messages,
 				SystemMessage(content="Your previous answer was empty. Provide a helpful reply now."),
 			]
-		return {"draft": llm_callable(messages).strip()}
+		if stream_context is not None:
+			stream_context.begin_respond_stream(had_plan=bool(plan_text))
+		try:
+			draft = llm_callable(messages).strip()
+		finally:
+			if stream_context is not None:
+				stream_context.end_llm_stream()
+		return {"draft": draft}
 
 	return respond
 

@@ -20,17 +20,12 @@ export ADA_EVAL_BASE_URL="${ADA_EVAL_BASE_URL:-http://127.0.0.1:8082/v1}"
 export ADA_AGENT_PROFILE="${ADA_AGENT_PROFILE:-chat_profile}"
 
 echo ""
-echo "Stack check (Agent :8082)..."
-LIVE_FLAG=""
+echo "Stack check (MLX :8080, Agent :8082)..."
 python - <<'PY'
-from ada.eval.harness.stack_check import stack_status
-status = stack_status()
-print(status)
-if status["agent_reachable"]:
-    print("Agent reachable — enabling live eval smoke (ADA_EVAL_RUN_LIVE=1).")
-    open("/tmp/ada_eval_live", "w").write("1")
-else:
-    print("WARN: Agent API not reachable — live eval_smoke tests will skip.")
+from ada.eval.harness.stack_check import require_agent_stack
+require_agent_stack()
+print("Stack OK — enabling live eval smoke (ADA_EVAL_RUN_LIVE=1).")
+open("/tmp/ada_eval_live", "w").write("1")
 PY
 if [[ -f /tmp/ada_eval_live ]]; then
 	export ADA_EVAL_RUN_LIVE=1

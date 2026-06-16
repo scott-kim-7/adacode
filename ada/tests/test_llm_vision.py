@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from ada.llm import ChatMessage, LLMClient
 from ada.registry import Profile
@@ -13,7 +13,6 @@ def _profile() -> Profile:
 		label="test",
 		provider="openai-compatible",
 		base_url="http://127.0.0.1:8080/v1",
-		model="test-model",
 		api_key="local",
 	)
 
@@ -30,13 +29,14 @@ def test_llm_client_sends_multimodal_json():
 	mock_client = MagicMock()
 	mock_client.post.return_value = _mock_response("red")
 
-	client = LLMClient(profile, api_key="local")
-	client._client = mock_client
-	content = [
-		{"type": "text", "text": "describe"},
-		{"type": "image_url", "image_url": {"url": f"data:image/png;base64,{TINY_PNG_B64}"}},
-	]
-	client.chat([ChatMessage(role="user", content=content)])
+	with patch("ada.openai_models.resolve_model_id", return_value="test-model"):
+		client = LLMClient(profile, api_key="local")
+		client._client = mock_client
+		content = [
+			{"type": "text", "text": "describe"},
+			{"type": "image_url", "image_url": {"url": f"data:image/png;base64,{TINY_PNG_B64}"}},
+		]
+		client.chat([ChatMessage(role="user", content=content)])
 
 	body = mock_client.post.call_args.kwargs["json"]
 	assert isinstance(body["messages"][0]["content"], list)
@@ -48,9 +48,10 @@ def test_llm_client_string_content_unchanged():
 	mock_client = MagicMock()
 	mock_client.post.return_value = _mock_response("hi")
 
-	client = LLMClient(profile, api_key="local")
-	client._client = mock_client
-	client.chat([ChatMessage(role="user", content="hello")])
+	with patch("ada.openai_models.resolve_model_id", return_value="test-model"):
+		client = LLMClient(profile, api_key="local")
+		client._client = mock_client
+		client.chat([ChatMessage(role="user", content="hello")])
 
 	body = mock_client.post.call_args.kwargs["json"]
 	assert body["messages"][0]["content"] == "hello"

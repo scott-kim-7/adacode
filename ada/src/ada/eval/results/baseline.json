@@ -6,7 +6,7 @@
     "mode": "smoke",
     "timestamp": "2026-06-07T12:16:55Z",
     "duration_sec": 4.22,
-    "model": "mlx-community/Qwen3-VL-32B-Instruct-8bit",
+    "model": "openapi-resolved",
     "endpoint": "http://127.0.0.1:8082/v1",
     "source": "harness-fallback"
   },
@@ -17,7 +17,7 @@
     "mode": "smoke",
     "timestamp": "2026-06-07T12:21:16Z",
     "duration_sec": 258.58,
-    "model": "mlx-community/Qwen3-VL-32B-Instruct-8bit",
+    "model": "openapi-resolved",
     "endpoint": "http://127.0.0.1:8082/v1",
     "source": "harness-fallback"
   },
@@ -28,7 +28,7 @@
     "mode": "smoke",
     "timestamp": "2026-06-07T12:21:22Z",
     "duration_sec": 2.85,
-    "model": "mlx-community/Qwen3-VL-32B-Instruct-8bit",
+    "model": "openapi-resolved",
     "endpoint": "http://127.0.0.1:8082/v1",
     "source": "harness-fallback"
   },
@@ -39,7 +39,7 @@
     "mode": "smoke",
     "timestamp": "2026-06-07T12:24:39Z",
     "duration_sec": 194.29,
-    "model": "mlx-community/Qwen3-VL-32B-Instruct-8bit",
+    "model": "openapi-resolved",
     "endpoint": "http://127.0.0.1:8082/v1",
     "source": "harness-fallback"
   },
@@ -50,7 +50,7 @@
     "mode": "smoke",
     "timestamp": "2026-06-07T12:26:21Z",
     "duration_sec": 99.97,
-    "model": "mlx-community/Qwen3-VL-32B-Instruct-8bit",
+    "model": "openapi-resolved",
     "endpoint": "http://127.0.0.1:8082/v1",
     "source": "harness-fallback"
   }

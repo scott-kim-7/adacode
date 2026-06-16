@@ -18,7 +18,7 @@ def main() -> int:
 	print("Download complete.")
 	print(f"  local cache: {path}")
 	print("")
-	print("Next: ./scripts/adacode.sh")
+	print("Next: start mlx_lm / mlx-vlm on :8080, then ./scripts/ada.sh start")
 	return 0
 
 

@@ -1,24 +1,46 @@
 #!/usr/bin/env python3
-"""Simulate Open WebUI aiohttp streaming against MLX / proxy."""
+"""Simulate Open WebUI aiohttp streaming against MLX / Ada Agent."""
 
 from __future__ import annotations
 
+import argparse
 import asyncio
 import json
+import os
 import sys
 
 import aiohttp
 
+PLAN_PROMPT = (
+	"이 시스템의 아키텍처를 단계별로 계획해 주세요. "
+	"설계 관점에서 모듈, 데이터 흐름, 배포를 bullet로 정리하세요."
+)
 
-async def test(url: str, label: str) -> tuple[str, str, str | None]:
+
+async def test(
+	url: str,
+	label: str,
+	*,
+	user_content: str,
+) -> tuple[str, str, str, str | None]:
+	import urllib.request
+
+	models_url = url.rsplit("/chat/completions", 1)[0] + "/models"
+	with urllib.request.urlopen(
+		urllib.request.Request(models_url, headers={"Authorization": "Bearer local"}),
+		timeout=30,
+	) as resp:
+		data = json.loads(resp.read().decode("utf-8"))
+	model = data["data"][0]["id"]
 	payload = {
-		"model": "mlx-community/Qwen3-VL-32B-Instruct-8bit",
-		"messages": [{"role": "user", "content": "안녕"}],
-		"max_tokens": 40,
+		"model": model,
+		"messages": [{"role": "user", "content": user_content}],
+		"max_tokens": 80,
 		"stream": True,
 		"stream_options": {"include_usage": True},
 	}
-	texts: list[str] = []
+	content_parts: list[str] = []
+	reasoning_parts: list[str] = []
 	error: str | None = None
 	try:
 		async with aiohttp.ClientSession() as session:
@@ -26,9 +48,12 @@ async def test(url: str, label: str) -> tuple[str, str, str | None]:
 				url,
 				json=payload,
 				headers={"Authorization": "Bearer local"},
-				timeout=aiohttp.ClientTimeout(total=120),
+				timeout=aiohttp.ClientTimeout(total=180),
 			) as resp:
 				print(f"{label} status={resp.status} ctype={resp.headers.get('Content-Type')}")
+				if resp.status != 200:
+					body = await resp.text()
+					return label, "", "", f"HTTP {resp.status}: {body[:200]}"
 				buffer = ""
 				async for raw in resp.content:
 					buffer += raw.decode("utf-8", errors="replace")
@@ -39,31 +64,75 @@ async def test(url: str, label: str) -> tuple[str, str, str | None]:
 							continue
 						payload_txt = line[5:].strip()
 						if payload_txt == "[DONE]":
-							return label, "".join(texts), error
+							return (
+								label,
+								"".join(content_parts),
+								"".join(reasoning_parts),
+								error,
+							)
 						try:
 							data = json.loads(payload_txt)
 							delta = data.get("choices", [{}])[0].get("delta", {})
 							content = delta.get("content")
 							if content:
-								texts.append(content)
-							reasoning = delta.get("reasoning")
-							if reasoning is not None:
-								print(f"{label} reasoning={reasoning!r}")
+								content_parts.append(content)
+							reasoning = delta.get("reasoning_content") or delta.get("reasoning")
+							if reasoning:
+								reasoning_parts.append(str(reasoning))
 						except json.JSONDecodeError as exc:
 							print(f"{label} parse_err={exc} line={payload_txt[:120]!r}")
 	except Exception as exc:  # noqa: BLE001
 		error = repr(exc)
-	return label, "".join(texts), error
+	return label, "".join(content_parts), "".join(reasoning_parts), error
+
+
+def default_targets() -> list[tuple[str, str]]:
+	agent_port = os.environ.get("ADA_AGENT_PORT", "8082")
+	mlx_port = os.environ.get("ADA_MLX_PORT", "8080")
+	host = os.environ.get("ADA_MLX_HOST", "127.0.0.1")
+	return [
+		(f"http://{host}:{agent_port}/v1/chat/completions", f"agent{agent_port}"),
+		(f"http://{host}:{mlx_port}/v1/chat/completions", f"mlx{mlx_port}"),
+	]
 
 
 async def main() -> int:
-	targets = [
-		("http://host.docker.internal:8081/v1/chat/completions", "proxy8081"),
-		("http://host.docker.internal:8080/v1/chat/completions", "mlx8080"),
-	]
+	parser = argparse.ArgumentParser(description=__doc__)
+	parser.add_argument(
+		"--require-sse",
+		action="store_true",
+		help="Exit 1 unless at least one target returns non-empty streamed text",
+	)
+	parser.add_argument(
+		"--agent-only",
+		action="store_true",
+		help="Only test Ada Agent (:8082 by default)",
+	)
+	parser.add_argument(
+		"--plan-smoke",
+		action="store_true",
+		help="Use a long plan-route prompt (Agent LangGraph plan + respond)",
+	)
+	args = parser.parse_args()
+
+	user_content = PLAN_PROMPT if args.plan_smoke else "안녕"
+	targets = default_targets()
+	if args.agent_only:
+		targets = [targets[0]]
+
+	ok = False
 	for url, label in targets:
-		name, text, err = await test(url, label)
-		print(f"RESULT {name} err={err} text={text[:120]!r}")
+		name, content, reasoning, err = await test(url, label, user_content=user_content)
+		print(
+			f"RESULT {name} err={err} content={content[:80]!r} "
+			f"reasoning={reasoning[:80]!r}"
+		)
+		if (content or reasoning) and not err:
+			ok = True
+
+	if args.require_sse and not ok:
+		print("No target produced streamed assistant text.", file=sys.stderr)
+		return 1
 	return 0
 
 

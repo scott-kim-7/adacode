@@ -24,11 +24,11 @@ def test_regression_agent_yaml_loads_vision_section():
 	assert cfg.verify.max_empty_retries >= 0
 
 
-def test_regression_model_registry_chat_profile_mlx():
+def test_regression_model_registry_chat_profile_openapi():
 	reg = load_registry()
 	profile = get_profile(reg, "chat_profile")
 	assert profile.base_url.endswith("/v1")
-	assert "Qwen" in profile.model or profile.model
+	assert "127.0.0.1:8080" in profile.base_url
 
 
 def test_regression_docker_compose_points_to_agent_api():

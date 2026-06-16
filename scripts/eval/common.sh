@@ -23,14 +23,14 @@ activate_venv() {
 
 resolve_model() {
 	python - <<'PY'
-from ada.registry import get_profile, load_registry
+from ada.openai_models import resolve_model_id
 import os
-profile_name = os.environ.get("ADA_AGENT_PROFILE", "chat_profile")
-print(get_profile(load_registry(), profile_name).model)
+base = os.environ.get("ADA_EVAL_BASE_URL", "http://127.0.0.1:8082/v1").rstrip("/")
+print(resolve_model_id(base, api_key=os.environ.get("OPENAI_API_KEY", "local")))
 PY
 }
 
-export ADA_EVAL_MODEL="${ADA_EVAL_MODEL:-$(resolve_model 2>/dev/null || echo ada-agent)}"
+export ADA_EVAL_MODEL="${ADA_EVAL_MODEL:-$(resolve_model 2>/dev/null || echo openapi-unloaded)}"
 
 write_benchmark_report() {
 	local benchmark="$1"

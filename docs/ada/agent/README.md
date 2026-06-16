@@ -68,7 +68,7 @@ ada ada-agent --once "안녕"    # 한 턴
 ada ada-agent --profile chat_profile
 ```
 
-MLX 서버(`./scripts/serve-qwen.sh` 또는 `./scripts/ada.sh start`)가 떠 있어야 합니다.
+LLM 서버(`http://127.0.0.1:8080/v1`, 외부 기동)와 `./scripts/ensure-ada-agent-server.sh` 또는 `./scripts/ada.sh start`가 필요합니다.
 
 ## Open WebUI와의 관계
 
@@ -87,6 +87,31 @@ Agent API 기동:
 ```
 
 Open WebUI Connections URL: `http://host.docker.internal:8082/v1` (키: `local`)
+
+## 실시간 스트리밍 (기본 ON)
+
+`./scripts/ada.sh restart` 후 Open WebUI에서 **새 채팅**을 열면 LangGraph LLM 출력이 SSE로 실시간 표시됩니다.
+
+| 구간 | SSE 필드 | UI |
+|------|----------|-----|
+| **plan** 노드 | `reasoning_content` (또는 `stream.plan_fallback_tags` 시 `…` content) | 접힌 thinking |
+| **respond** 노드 | `content` | 채팅 본문 |
+
+| 모드 | 동작 |
+|------|------|
+| `ADA_AGENT_FORCE_NON_STREAM=0` (기본) | `stream:true` → SSE |
+| `ADA_AGENT_FORCE_NON_STREAM=1` | buffered JSON (구 Open WebUI 호환) |
+| tools 요청 | 항상 buffered |
+
+설정: [`ada/config/agent.yaml`](../../config/agent.yaml) → `stream.plan_fallback_tags`
+
+검증:
+
+```bash
+./scripts/ada.sh restart
+python scripts/test_openwebui_stream.py --agent-only --require-sse
+python scripts/test_openwebui_stream.py --agent-only --plan-smoke --require-sse
+```
 
 ## Vision (이미지 대화)
 

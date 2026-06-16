@@ -1,11 +1,18 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
 import httpx
 
+from ada.openai_stream import (
+	content_delta_from_chunk,
+	finish_reason_from_chunk,
+	is_sse_done_line,
+	parse_sse_data_line,
+)
 from ada.registry import Profile
 from ada.vault import Vault, VaultError, prompt_password
 
@@ -35,6 +42,14 @@ class LLMClient:
 		self.api_key = api_key or profile.api_key or "local"
 		timeout = float(os.environ.get("ADA_LLM_TIMEOUT", "300"))
 		self._client = httpx.Client(timeout=timeout)
+		self._model_id: str | None = None
+
+	def _model(self) -> str:
+		if self._model_id is None:
+			from ada.openai_models import effective_model_id
+
+			self._model_id = effective_model_id(self.profile.base_url, None, api_key=self.api_key)
+		return self._model_id
 
 	def _serialize_message(self, message: ChatMessage) -> dict[str, Any]:
 		payload: dict[str, Any] = {"role": message.role}
@@ -63,7 +78,7 @@ class LLMClient:
 			"Content-Type": "application/json",
 		}
 		body: dict[str, Any] = {
-			"model": self.profile.model,
+			"model": self._model(),
 			"messages": payload_messages,
 			"stream": False,
 			"max_tokens": max_tokens,
@@ -90,6 +105,53 @@ class LLMClient:
 	def chat(self, messages: list[ChatMessage], max_tokens: int = 1024) -> str:
 		result = self.chat_completion(messages, max_tokens=max_tokens)
 		return result.content or ""
+
+	def chat_completion_stream(
+		self,
+		messages: list[ChatMessage],
+		*,
+		on_delta: Callable[[str], None],
+		max_tokens: int = 1024,
+	) -> ChatCompletionResult:
+		payload_messages = [self._serialize_message(m) for m in messages]
+		url = f"{self.profile.base_url.rstrip('/')}/chat/completions"
+		headers = {
+			"Authorization": f"Bearer {self.api_key}",
+			"Content-Type": "application/json",
+		}
+		body: dict[str, Any] = {
+			"model": self._model(),
+			"messages": payload_messages,
+			"stream": True,
+			"max_tokens": max_tokens,
+		}
+		text_parts: list[str] = []
+		finish_reason = "stop"
+		with self._client.stream("POST", url, headers=headers, json=body) as resp:
+			resp.raise_for_status()
+			for line in resp.iter_lines():
+				if not line:
+					continue
+				if is_sse_done_line(line):
+					break
+				data = parse_sse_data_line(line)
+				if data is None:
+					continue
+				reason = finish_reason_from_chunk(data)
+				if reason:
+					finish_reason = reason
+				delta_text = content_delta_from_chunk(data)
+				if delta_text:
+					text_parts.append(delta_text)
+					on_delta(delta_text)
+				if reason:
+					break
+		content = "".join(text_parts)
+		return ChatCompletionResult(
+			content=content or None,
+			tool_calls=None,
+			finish_reason=finish_reason,
+		)
 
 	def close(self) -> None:
 		self._client.close()

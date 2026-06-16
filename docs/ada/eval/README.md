@@ -21,7 +21,7 @@ Contract + 벤치 5개 + eval pytest + 통합 리포트:
 ./scripts/ada.sh start
 ./scripts/verify-regression-full.sh
 ./scripts/verify-regression-full.sh --update-baseline   # baseline.json 갱신
-./scripts/verify-regression-full.sh --start-stack       # 스택 자동 기동
+./scripts/verify-regression-full.sh                       # MLX :8080 + Agent :8082 선행 필요
 ```
 
 **산출물:** `ada/src/ada/eval/reports/full-regression-latest.md`

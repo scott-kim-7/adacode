@@ -1,17 +1,18 @@
 # Step 2 — Model Registry, vault, 외부 LLM, Tri-Chat
 
-Step 1(로컬 Qwen IDE) 완료 후 **ada/** Python으로 3자 대화와 외부 API 연동을 추가합니다.
+**ada/** Python으로 3자 대화와 외부 API 연동을 추가합니다.
 
 ## 목표
 
 1. **Model Registry** — `chat_profile` / `external_profile` / `regression_profile`
 2. **vault** — 외부 API 키 암호화 저장 (`ada/vault/secrets.vault.enc`)
-3. **Tri-Chat MVP** — 로컬 MLX · 외부 LLM · 사용자 (CLI)
+3. **Tri-Chat MVP** — 로컬 OpenAPI LLM · 외부 LLM · 사용자 (CLI)
 
 ## 사전 조건
 
-- Step 1: `./scripts/adacode.sh`, `./scripts/verify-step1.sh`
-- MLX 서버: `./scripts/serve-qwen.sh` (Tri-Chat 로컬 턴용)
+- `./scripts/install-step2.sh`
+- LLM 서버: `mlx_lm` / `mlx-vlm`이 `http://127.0.0.1:8080/v1` 에서 응답 (Ada가 기동하지 않음)
+- web 스택 (선택): `./scripts/ada.sh start`
 
 ## 1. ada 패키지 설치
 
@@ -44,16 +45,16 @@ export ADA_EXTERNAL_API_KEY=sk-...
 
 | 프로필 | 역할 |
 |--------|------|
-| `chat_profile` | 로컬 MLX Qwen (`127.0.0.1:8080`) — Step 1 BYOK와 동일 |
+| `chat_profile` | 로컬 OpenAPI (`127.0.0.1:8080`) — 모델 ID는 `GET /v1/models` |
 | `external_profile` | OpenAI-compatible API — vault `external.openai.api_key` |
-| `regression_profile` | Step 4 placeholder — 로컬 MLX 고정 |
+| `regression_profile` | 회귀 테스트용 로컬 OpenAPI |
 
 ```bash
-ada profiles chat_profile   # 상세
+ada profiles chat_profile
 ada profiles
 ```
 
-## 4. IDE — 두 번째 BYOK (외부 LLM)
+## 4. IDE — 두 번째 BYOK (외부 LLM, 선택)
 
 Step 1 JSON에 **두 번째 Custom Endpoint** 그룹을 추가합니다.
 
@@ -61,18 +62,14 @@ Step 1 JSON에 **두 번째 Custom Endpoint** 그룹을 추가합니다.
 ./scripts/install-step2.sh
 ```
 
-또는 [`chatLanguageModels.external.example.json`](chatLanguageModels.external.example.json) 내용을  
-`chatLanguageModels.json` 배열에 **merge** (Local Qwen 그룹 유지).
+예시: [`chatLanguageModels.external.example.json`](chatLanguageModels.external.example.json)
 
-IDE 재시작: Cmd+Q → `./scripts/adacode.sh`
-
-> BYOK JSON에는 API 키가 들어갑니다. **ada orchestration(Tri-Chat CLI)** 은 vault를 사용하고, IDE BYOK는 사용자가 직접 키를 넣거나 OS keychain에 맡깁니다.
+> BYOK JSON에는 API 키가 들어갑니다. **Tri-Chat CLI**는 vault를 사용합니다.
 
 ## 5. Tri-Chat CLI (MVP)
 
 ```bash
-# 터미널 1
-./scripts/serve-qwen.sh
+# 터미널 1: LLM 서버가 :8080에서 이미 응답해야 함
 
 # 터미널 2
 cd ada && source .venv/bin/activate
@@ -86,7 +83,7 @@ ada tri-chat
 ada tri-chat --once "Summarize what Tri-Chat does in one sentence."
 ```
 
-흐름: **User** → **Local (Qwen)** → **External (API)** → 반복.
+흐름: **User** → **Local (OpenAPI)** → **External (API)** → 반복.
 
 ## Step 2 완료 기준
 
@@ -94,8 +91,8 @@ ada tri-chat --once "Summarize what Tri-Chat does in one sentence."
 - [x] vault `make vault-init` / `vault-set` / `vault-list`
 - [x] Tri-Chat CLI — 로컬 + 외부 최소 1턴 (`--once`)
 - [x] 외부 BYOK 예시 JSON + `install-step2.sh`
-- [ ] IDE에서 두 모델 동시 선택 (사용자 확인)
+- [ ] IDE에서 두 모델 동시 선택 (사용자 확인, IDE 사용 시)
 
 ## 다음
 
-Step 3 — 자율 Agent. Step 2 후반 — VL 이미지 전용 경로 또는 Tri-Chat 역할 분담.
+Step 3 — 자율 Agent. LangGraph agent API는 Open WebUI와 `:8082`로 연동됩니다.

@@ -15,12 +15,12 @@ def cmd_profiles(args: argparse.Namespace) -> int:
 		print(f"{p.name} ({p.label})")
 		print(f"  provider:   {p.provider}")
 		print(f"  base_url:   {p.base_url}")
-		print(f"  model:      {p.model}")
+		print(f"  models:     GET {p.base_url.rstrip('/')}/models")
 		print(f"  api_key:    {p.api_key or '(vault: ' + str(p.api_key_vault) + ')'}")
 		print(f"  notes:      {p.notes}")
 	else:
 		for name, p in sorted(reg.profiles.items()):
-			print(f"  {name}: {p.label} — {p.model}")
+			print(f"  {name}: {p.label} — {p.base_url}")
 	return 0
 
 

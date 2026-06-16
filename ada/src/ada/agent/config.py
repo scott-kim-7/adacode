@@ -41,6 +41,12 @@ class ToolsConfig:
 	timeout_sec: int = 300
 
 
+@dataclass(frozen=True)
+class StreamConfig:
+	# When true, plan tokens stream as content inside … (OW 0.8.x fallback).
+	plan_fallback_tags: bool = True
+
+
 DEFAULT_SYSTEM_PROMPT = "You are Ada, a helpful assistant."
 
 
@@ -53,6 +59,7 @@ class AgentConfig:
 	verify: VerifyConfig = field(default_factory=VerifyConfig)
 	vision: VisionConfig = field(default_factory=VisionConfig)
 	tools: ToolsConfig = field(default_factory=ToolsConfig)
+	stream: StreamConfig = field(default_factory=StreamConfig)
 
 
 def _as_tuple(value: object, default: tuple[str, ...]) -> tuple[str, ...]:
@@ -76,6 +83,7 @@ def load_agent_config(path: Path | None = None) -> AgentConfig:
 	verify_raw = raw.get("verify") or {}
 	vision_raw = raw.get("vision") or {}
 	tools_raw = raw.get("tools") or {}
+	stream_raw = raw.get("stream") or {}
 
 	return AgentConfig(
 		system_prompt=str(raw.get("system_prompt") or DEFAULT_SYSTEM_PROMPT).strip(),
@@ -104,5 +112,8 @@ def load_agent_config(path: Path | None = None) -> AgentConfig:
 		tools=ToolsConfig(
 			max_rounds=int(tools_raw.get("max_rounds") or 10),
 			timeout_sec=int(tools_raw.get("timeout_sec") or 300),
+		),
+		stream=StreamConfig(
+			plan_fallback_tags=bool(stream_raw.get("plan_fallback_tags", True)),
 		),
 	)

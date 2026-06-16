@@ -6,8 +6,8 @@
 		"apiType": "chat-completions",
 		"models": [
 			{
-				"id": "gpt-4o-mini",
-				"name": "GPT-4o mini (External)",
+				"id": "openapi-resolved",
+				"name": "External LLM (from GET /v1/models)",
 				"url": "https://api.openai.com/v1",
 				"toolCalling": false,
 				"maxInputTokens": 128000,

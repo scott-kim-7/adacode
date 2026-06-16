@@ -11,12 +11,18 @@ services:
       OPENAI_API_BASE_URLS: ${OPENAI_API_BASE_URL:-http://host.docker.internal:8082/v1}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-local}
       OPENAI_API_KEYS: ${OPENAI_API_KEY:-local}
-      # Shown when MLX is reachable; also pins default in fresh installs
-      DEFAULT_MODELS: ${ADA_MLX_MODEL:-mlx-community/Qwen3-VL-32B-Instruct-8bit}
+      # Auto-select mlx_vlm --model (set by serve-open-webui.sh from /health loaded_model)
+      DEFAULT_MODELS: ${DEFAULT_MODELS:-}
+      DEFAULT_PINNED_MODELS: ${DEFAULT_PINNED_MODELS:-}
+      # Model list from OpenAPI GET /v1/models on OPENAI_API_BASE_URL
       # Keep chat traffic on the LangGraph agent API (8082), not browser → MLX direct
       ENABLE_DIRECT_CONNECTIONS: "false"
+      # Agent streams plan (thinking) + respond by default; set ADA_AGENT_FORCE_NON_STREAM=1 to buffer
+      # ADA_AGENT_FORCE_NON_STREAM: "0"
       # Disable Ollama noise (we only use MLX OpenAI API)
       ENABLE_OLLAMA_API: "false"
+      # Keep login sessions across container recreate/restart (empty = new key each time → 401 toast)
+      WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY:-adacode-local-webui-secret}
     volumes:
       - open-webui:/app/backend/data
     extra_hosts:

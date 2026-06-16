@@ -10,11 +10,11 @@ def test_load_registry_has_three_profiles():
 	assert set(reg.profiles) >= {"chat_profile", "external_profile", "regression_profile"}
 
 
-def test_chat_profile_points_to_local_mlx():
+def test_chat_profile_points_to_local_openapi():
 	reg = load_registry()
 	p = get_profile(reg, "chat_profile")
 	assert "127.0.0.1:8080" in p.base_url
-	assert "Qwen" in p.model or "qwen" in p.model.lower()
+	assert p.base_url.endswith("/v1")
 
 
 def test_external_profile_uses_vault():

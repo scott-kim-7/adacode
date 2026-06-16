@@ -6,20 +6,20 @@
 
 ```bash
 ./scripts/install-step2.sh
-./scripts/serve-qwen.sh          # 터미널 1: MLX :8080
-./scripts/serve-ada.sh           # 터미널 2: Open WebUI :3000
+# MLX :8080 — 외부에서 기동 (mlx_lm / mlx-vlm)
+./scripts/ada.sh start           # Agent :8082 + Open WebUI :3000
 ```
 
 브라우저 → http://127.0.0.1:3000 → 로컬 계정 생성 → 채팅
 
-모델은 [`ada/config/model_registry.yaml`](../ada/config/model_registry.yaml)의 `chat_profile`과 동일한 Qwen MLX 모델을 사용합니다.
+모델 ID는 런타임에 `GET /v1/models`로 해석합니다. 설정: [`ada/config/model_registry.yaml`](../ada/config/model_registry.yaml) (`chat_profile`).
 
 ## 구성
 
 | 레이어 | 설명 |
 |--------|------|
 | **Open WebUI** | Docker, 채팅 UI |
-| **MLX** | `serve-qwen.sh`, OpenAI-compatible `:8080/v1` |
+| **MLX** | 외부 LLM 서버, OpenAI-compatible `:8080/v1` |
 | **ada/** | Python — registry, vault, Tri-Chat, `ada ada-agent` CLI |
 
 ## 검증

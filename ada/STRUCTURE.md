@@ -31,7 +31,7 @@ ada/
 |------|------|
 | Open WebUI | [`web/docker-compose.yml`](../web/docker-compose.yml) → `:8082` agent API |
 | LangGraph agent | [`scripts/ensure-ada-agent-server.sh`](../scripts/ensure-ada-agent-server.sh) |
-| MLX 서버 | [`scripts/serve-qwen.sh`](../scripts/serve-qwen.sh) |
+| MLX 서버 | 외부 프로세스 — `http://127.0.0.1:8080/v1` (Ada가 기동/종료하지 않음) |
 | 원스톱 | [`scripts/ada.sh`](../scripts/ada.sh) |
 
 Open WebUI → LangGraph MainGraph (`:8082`) → MLX (`:8080`).  

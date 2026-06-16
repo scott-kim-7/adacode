@@ -17,10 +17,12 @@ TINY_PNG_B64 = (
 def main() -> int:
 	host = os.environ.get("ADA_MLX_HOST", "127.0.0.1")
 	port = os.environ.get("ADA_MLX_PORT", "8080")
-	model = os.environ.get(
-		"ADA_MLX_MODEL", "mlx-community/Qwen3-VL-32B-Instruct-8bit"
-	)
-	base = f"http://{host}:{port}"
+	base = f"http://{host}:{port}/v1"
+
+	sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parents[2] / "ada" / "src"))
+	from ada.openai_models import resolve_model_id
+
+	model = resolve_model_id(base)
 
 	body = {
 		"model": model,
@@ -41,7 +43,7 @@ def main() -> int:
 	}
 
 	req = urllib.request.Request(
-		f"{base}/v1/chat/completions",
+		f"{base}/chat/completions",
 		data=json.dumps(body).encode("utf-8"),
 		headers={"Content-Type": "application/json"},
 		method="POST",
@@ -54,7 +56,7 @@ def main() -> int:
 		text = exc.read().decode("utf-8", errors="replace")
 		if "Only 'text' content type is supported" in text:
 			print(
-				"RESULT: mlx_lm text-only server detected — restart with ./scripts/serve-qwen.sh (mlx-vlm)",
+				"RESULT: mlx_lm text-only server detected — use a vision-capable mlx-vlm server on :8080",
 				file=sys.stderr,
 			)
 			return 2

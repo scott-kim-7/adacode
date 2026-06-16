@@ -45,7 +45,9 @@ PORT="${ADA_MLX_PORT:-8080}"
 if curl -sf "http://${HOST}:${PORT}/v1/models" >/dev/null 2>&1; then
 	echo "MLX server reachable at http://${HOST}:${PORT}"
 else
-	echo "MLX not running (optional): ./scripts/serve-qwen.sh"
+	echo "ERROR: MLX server not reachable at http://${HOST}:${PORT}" >&2
+	echo "Start mlx_lm / mlx-vlm on port ${PORT} before verify." >&2
+	exit 1
 fi
 
 WEBUI_PORT="${ADA_OPEN_WEBUI_PORT:-3000}"
@@ -57,4 +59,4 @@ fi
 
 echo ""
 echo "Ada verify passed."
-echo "Quick start: ./scripts/serve-qwen.sh && ./scripts/serve-ada.sh"
+echo "Quick start: ensure MLX on :${PORT}, then ./scripts/ada.sh start"

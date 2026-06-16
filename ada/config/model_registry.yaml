@@ -1,33 +1,30 @@
-# Ada Model Registry — profile → endpoint mapping
+# Ada Model Registry — profile → OpenAI-compatible endpoint (model id from GET /v1/models)
 # See docs/ada/step2/README.md
 
 profiles:
   chat_profile:
-    label: Local Qwen (MLX)
+    label: Local LLM (OpenAPI)
     provider: openai-compatible
     base_url: http://127.0.0.1:8080/v1
-    model: mlx-community/Qwen3-VL-32B-Instruct-8bit
     api_key: local
     tool_calling: true
-    notes: Step 1 IDE BYOK와 동일 endpoint. Vision via mlx-vlm server (serve-qwen.sh).
+    notes: Model id resolved at runtime via /v1/models on base_url.
 
   external_profile:
     label: External API LLM
     provider: openai-compatible
     base_url: https://api.openai.com/v1
-    model: gpt-4o-mini
     api_key_vault: external.openai.api_key
     tool_calling: false
-    notes: vault 또는 ADA_EXTERNAL_API_KEY. IDE BYOK는 chatLanguageModels.external.example.json.
+    notes: vault 또는 ADA_EXTERNAL_API_KEY. Model id from /v1/models.
 
   regression_profile:
-    label: Regression (local MLX fixed)
+    label: Regression (local OpenAPI)
     provider: openai-compatible
     base_url: http://127.0.0.1:8080/v1
-    model: mlx-community/Qwen3-VL-32B-Instruct-8bit
     api_key: local
     tool_calling: true
-    notes: Step 4 placeholder — 회귀·자기개선은 로컬 MLX 고정.
+    notes: Same endpoint as chat_profile; model resolved via OpenAPI.
 
 tri_chat:
   turn_order:

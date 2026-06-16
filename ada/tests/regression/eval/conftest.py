@@ -6,6 +6,8 @@ import pytest
 
 from ada.eval.harness.stack_check import is_agent_reachable
 
+os.environ.setdefault("ADA_EVAL_MODEL", "eval-offline")
+
 
 def pytest_configure(config: pytest.Config) -> None:
 	config.addinivalue_line("markers", "eval_smoke: Agent eval smoke gates (requires :8082 for live runs)")

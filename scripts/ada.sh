@@ -1,49 +1,43 @@
 #!/usr/bin/env bash
-# Ada web stack: stop / start / restart MLX + proxy + Open WebUI.
+# Ada web stack: stop / start / restart Agent + Open WebUI (MLX :8080 must already be running).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # shellcheck source=ada/mlx_defaults.sh
 source "$ROOT/scripts/ada/mlx_defaults.sh"
 
-HOST="${ADA_MLX_HOST:-127.0.0.1}"
-MLX_PORT="${ADA_MLX_PORT:-8080}"
+HOST="$(ada_mlx_host)"
+MLX_PORT="$(ada_mlx_port)"
 AGENT_PORT="${ADA_AGENT_PORT:-8082}"
-PROXY_PORT="${ADA_MLX_PROXY_PORT:-8081}"
 WEBUI_PORT="${ADA_OPEN_WEBUI_PORT:-3000}"
 CONTAINER="${ADA_OPEN_WEBUI_CONTAINER:-adacode-open-webui}"
 COMPOSE_FILE="$ROOT/web/docker-compose.yml"
-MODEL="${ADA_MLX_MODEL:-$ADA_MLX_MODEL_DEFAULT}"
-MLX_LOG="${ADA_MLX_LOG:-$ROOT/.ada-mlx-server.log}"
-MLX_PID_FILE="${ADA_MLX_PID_FILE:-$ROOT/.ada-mlx-server.pid}"
-DAEMON_PID_FILE="${ADA_MLX_DAEMON_PID:-$ROOT/.ada-mlx-daemon.pid}"
 AGENT_PID_FILE="${ADA_AGENT_PID:-$ROOT/.ada-agent-server.pid}"
 AGENT_SCRIPT="$ROOT/scripts/ada_agent_server.py"
-PROXY_PID_FILE="${ADA_MLX_PROXY_PID:-$ROOT/.ada-mlx-proxy.pid}"
-PROXY_SCRIPT="$ROOT/scripts/mlx_openai_proxy.py"
 
 usage() {
 	cat <<EOF
 Usage: $(basename "$0") [command]
 
 Commands:
-  restart   Stop everything, then start fresh (default)
-  start     Start MLX, LangGraph agent API, and Open WebUI
-  stop      Stop Open WebUI, agent API, and MLX
-  status    Show whether each service is up
+  restart   Stop Agent + WebUI, then start fresh (default)
+  start     Start Agent + Open WebUI (MLX on :${MLX_PORT} must already be up)
+  stop      Stop Open WebUI and Agent API (does not stop MLX)
+  status    Show whether MLX, Agent, and WebUI are up
+
+Prerequisite:
+  LLM server (mlx_vlm.server / mlx_lm) at http://${HOST}:${MLX_PORT}
+  — verified via /health or /v1/models (waits up to ${ADA_MLX_WAIT_SEC:-30}s)
 
 Environment (optional):
-  ADA_MLX_MODEL              MLX model id (default: $ADA_MLX_MODEL_DEFAULT)
   ADA_MLX_PORT               MLX OpenAI API port (default: 8080)
   ADA_AGENT_PORT             LangGraph OpenAI API port (default: 8082)
-  ADA_MLX_PROXY_PORT         Direct MLX proxy port (optional, default: 8081)
   ADA_OPEN_WEBUI_PORT        Browser UI port (default: 3000)
 
 Examples:
   ./scripts/ada.sh
   ./scripts/ada.sh stop
   ./scripts/ada.sh start
-  ADA_MLX_MODEL=mlx-community/Qwen3-VL-32B-Instruct-8bit ./scripts/ada.sh restart
 EOF
 }
 
@@ -82,7 +76,7 @@ kill_port_listeners() {
 }
 
 stop_webui() {
-	echo "[1/3] Open WebUI"
+	echo "[1/2] Open WebUI"
 	if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
 		docker compose -f "$COMPOSE_FILE" down >/dev/null 2>&1 || true
 		docker rm -f "$CONTAINER" open-webui >/dev/null 2>&1 || true
@@ -95,7 +89,7 @@ stop_webui() {
 }
 
 stop_agent() {
-	echo "[2/3] LangGraph agent API"
+	echo "[2/2] LangGraph agent API"
 	kill_pid_file "$AGENT_PID_FILE" "agent server"
 	pkill -f "$AGENT_SCRIPT" 2>/dev/null || true
 	kill_port_listeners "$AGENT_PORT" "agent server"
@@ -107,71 +101,33 @@ stop_agent() {
 	fi
 }
 
-stop_mlx() {
-	echo "[3/3] MLX server"
-	kill_pid_file "$DAEMON_PID_FILE" "MLX daemon"
-	"$ROOT/scripts/stop-mlx-server.sh" || true
-	pkill -f "mlx_vlm.server" 2>/dev/null || true
-	pkill -f "mlx_lm.server" 2>/dev/null || true
-	kill_port_listeners "$MLX_PORT" "MLX server"
-	sleep 1
-	if curl -sf "http://${HOST}:${MLX_PORT}/v1/models" >/dev/null 2>&1; then
-		echo "  WARNING: MLX still responds on :${MLX_PORT}" >&2
-	else
-		echo "  stopped (:${MLX_PORT} free)"
-	fi
-}
-
 stop_all() {
-	echo "=== Stop Ada stack ==="
+	echo "=== Stop Ada stack (Agent + WebUI; MLX unchanged) ==="
 	stop_webui
 	stop_agent
-	stop_mlx
 	echo ""
-	echo "All Ada services stopped."
+	echo "Ada Agent and WebUI stopped. MLX on :${MLX_PORT} was not touched."
 }
 
 mlx_up() {
-	curl -sf "http://${HOST}:${MLX_PORT}/v1/models" >/dev/null 2>&1
+	ada_mlx_up
 }
 
 agent_up() {
-	curl -sf "http://${HOST}:${AGENT_PORT}/v1/models" >/dev/null 2>&1
+	curl -sf "http://${HOST}:${AGENT_PORT}/health" >/dev/null 2>&1
 }
 
 webui_up() {
 	curl -sf "http://127.0.0.1:${WEBUI_PORT}/" >/dev/null 2>&1
 }
 
-start_mlx() {
-	echo "[1/3] MLX server ($MODEL)"
-	nohup env ADA_MLX_MODEL="$MODEL" "$ROOT/scripts/serve-qwen.sh" >>"$MLX_LOG" 2>&1 &
-	echo $! >"$MLX_PID_FILE"
-	echo "  pid: $(cat "$MLX_PID_FILE")"
-	echo "  log: $MLX_LOG"
-	echo -n "  waiting"
-	for i in $(seq 1 90); do
-		if mlx_up; then
-			echo " ready"
-			return 0
-		fi
-		echo -n "."
-		sleep 2
-	done
-	echo " FAILED" >&2
-	tail -20 "$MLX_LOG" >&2
-	return 1
-}
-
 start_agent() {
-	echo "[2/3] LangGraph agent API (:${AGENT_PORT})"
-	export ADA_MLX_MODEL="$MODEL"
+	echo "[1/2] LangGraph agent API (:${AGENT_PORT})"
 	"$ROOT/scripts/ensure-ada-agent-server.sh" --force
 }
 
 start_webui() {
-	echo "[3/3] Open WebUI (:${WEBUI_PORT})"
-	export ADA_MLX_MODEL="$MODEL"
+	echo "[2/2] Open WebUI (:${WEBUI_PORT})"
 	export ADA_MLX_HOST="$HOST"
 	export ADA_MLX_PORT="$MLX_PORT"
 	export ADA_OPEN_WEBUI_PORT="$WEBUI_PORT"
@@ -181,21 +137,34 @@ start_webui() {
 
 start_all() {
 	echo "=== Start Ada stack ==="
+	if ada_mlx_up; then
+		MODEL_ID="$(ada_resolve_openai_model "$(ada_mlx_url)/v1" 2>/dev/null || true)"
+	else
+		ada_warn_mlx_up || true
+		MODEL_ID=""
+	fi
 	if ! command -v docker >/dev/null 2>&1 || ! docker info >/dev/null 2>&1; then
 		echo "Docker Desktop is not running. Start it, then retry." >&2
 		exit 1
 	fi
-	start_mlx
 	start_agent
 	start_webui
+	ada_sync_model_on_restart || true
 	echo ""
 	echo "Ada stack is running."
-	echo "  MLX:    http://${HOST}:${MLX_PORT}/v1"
+	echo "  MLX:    $(ada_mlx_url)/v1  (external — not managed by Ada)"
 	echo "  Agent:  http://${HOST}:${AGENT_PORT}/v1  (LangGraph → MLX)"
 	echo "  UI:     http://127.0.0.1:${WEBUI_PORT}"
-	echo "  Model:  ${MODEL}"
+	echo "  Models: OpenAPI GET $(ada_mlx_url)/v1/models"
+	if [[ -n "$MODEL_ID" ]]; then
+		echo "  Loaded: ${MODEL_ID}"
+	elif ada_mlx_up; then
+		echo "  Loaded: (none yet — select a model in Open WebUI)"
+	else
+		echo "  MLX:    not reachable — start mlx_vlm.server on :${MLX_PORT}"
+	fi
 	echo ""
-	echo "Open a NEW chat in the browser and pick: ${MODEL}"
+	echo "Open a NEW chat in the browser (model list from Agent API)."
 }
 
 status_line() {
@@ -218,13 +187,22 @@ status_all() {
 	if command -v docker >/dev/null 2>&1 && docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "$CONTAINER"; then
 		docker_ok=1
 	fi
-	status_line "MLX :${MLX_PORT}" "$mlx_ok" "$MODEL"
+	status_line "MLX :${MLX_PORT}" "$mlx_ok" "external LLM server"
 	status_line "Agent :${AGENT_PORT}" "$agent_ok" "Open WebUI → LangGraph"
 	status_line "WebUI :${WEBUI_PORT}" "$webui_ok" "http://127.0.0.1:${WEBUI_PORT}"
 	status_line "Docker ${CONTAINER}" "$docker_ok" "$(docker ps --filter "name=${CONTAINER}" --format '{{.Status}}' 2>/dev/null || echo 'not running')"
+	local model_id=""
+	if mlx_ok; then
+		model_id="$(ada_default_model_id 2>/dev/null || true)"
+	fi
+	if [[ -n "$model_id" ]]; then
+		printf "  MLX  loaded_model     %s\n" "$model_id"
+	fi
 	echo ""
 	if [[ "$mlx_ok$agent_ok$webui_ok" == "111" ]]; then
 		echo "Ready. Use a NEW chat after restart."
+	elif [[ "$mlx_ok" -eq 0 ]]; then
+		echo "MLX is down. Start the LLM server on :${MLX_PORT}, then: ./scripts/ada.sh start"
 	else
 		echo "Not fully up. Run: ./scripts/ada.sh restart"
 	fi

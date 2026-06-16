@@ -38,7 +38,7 @@ ada/tests/regression/
 |------|------|
 | **MainGraph** | direct 1회 LLM, plan 2회, empty retry, multi-turn session |
 | **Vision** | plan/respond LLM 입력에 `image_url` 포함, compat에서 strip 없음 |
-| **Agent API** | `stream:true` → buffered JSON, OpenAI response shape, health/models |
+| **Agent API** | 기본 SSE (`plan` reasoning + `respond` content); `ADA_AGENT_FORCE_NON_STREAM=1` → buffered |
 | **Stack config** | docker-compose → `:8082`, agent.yaml vision, chat_profile MLX |
 
 ## CI

@@ -54,7 +54,7 @@ def main() -> int:
 
 	print()
 	if missing or weight_count == 0:
-		print("RESULT: INCOMPLETE — run: ./scripts/download-qwen-model.sh")
+		print("RESULT: INCOMPLETE — run: ./scripts/download-mlx-model.sh")
 		return 1
 
 	print("RESULT: cache looks complete")

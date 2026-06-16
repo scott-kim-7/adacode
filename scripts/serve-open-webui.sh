@@ -11,7 +11,6 @@ MLX_HOST="${ADA_MLX_HOST:-127.0.0.1}"
 MLX_PORT="${ADA_MLX_PORT:-8080}"
 WEBUI_PORT="${ADA_OPEN_WEBUI_PORT:-3000}"
 CONTAINER_NAME="${ADA_OPEN_WEBUI_CONTAINER:-adacode-open-webui}"
-MODEL="${ADA_MLX_MODEL:-$ADA_MLX_MODEL_DEFAULT}"
 
 mlx_url() {
 	echo "http://${MLX_HOST}:${MLX_PORT}"
@@ -34,9 +33,7 @@ fi
 AGENT_PORT="${ADA_AGENT_PORT:-8082}"
 
 if ! mlx_healthy; then
-	echo "MLX server is not running at $(mlx_url)" >&2
-	echo "Start it: ./scripts/restart-mlx.sh" >&2
-	exit 1
+	echo "WARNING: MLX server is not running at $(mlx_url) — continuing (start mlx_vlm when ready)" >&2
 fi
 
 "$ROOT/scripts/ensure-ada-agent-server.sh"
@@ -49,11 +46,11 @@ if [[ "$(uname -s)" == "Linux" ]]; then
 	fi
 fi
 
-export ADA_MLX_MODEL="$MODEL"
 export ADA_OPEN_WEBUI_PORT="$WEBUI_PORT"
 export ADA_OPEN_WEBUI_CONTAINER="$CONTAINER_NAME"
 export OPENAI_API_BASE_URL="$OPENAI_BASE"
 export OPENAI_API_KEY=local
+ada_export_webui_model_env
 
 # Remove stale container that failed to bind the port (STATUS=Created)
 if docker ps -a --format '{{.Names}} {{.Status}}' | grep -q "^${CONTAINER_NAME} Created"; then
@@ -77,13 +74,18 @@ fi
 echo "Starting Open WebUI on http://127.0.0.1:${WEBUI_PORT}"
 echo "  compose: ${COMPOSE_FILE}"
 echo "  Agent API: ${OPENAI_BASE} (LangGraph → MLX)"
-echo "  model:   ${MODEL}"
+echo "  models:  OpenAPI via Agent /v1/models"
+if [[ -n "${DEFAULT_MODELS:-}" ]]; then
+	echo "  default: ${DEFAULT_MODELS} (from mlx_vlm loaded_model)"
+else
+	echo "  default: (none — start mlx_vlm with --model, then ./scripts/fix-open-webui-models.sh)"
+fi
 echo ""
 echo "First login: create a local account (data stays on your machine)."
 echo "Stop with: docker compose -f ${COMPOSE_FILE} down"
 echo ""
 
-docker compose -f "$COMPOSE_FILE" up -d
+docker compose -f "$COMPOSE_FILE" up -d --force-recreate
 
 echo "Waiting for Open WebUI to become ready ..."
 for ((i = 1; i <= 60; i++)); do
@@ -98,11 +100,14 @@ for ((i = 1; i <= 60; i++)); do
 	fi
 done
 
+# Align DEFAULT_MODELS env + webui.db with mlx_vlm loaded_model.
+ada_sync_model_on_restart || true
+
 if docker exec "$CONTAINER_NAME" curl -sf --connect-timeout 5 "http://host.docker.internal:${AGENT_PORT}/v1/models" >/dev/null 2>&1; then
 	echo "Open WebUI → LangGraph agent connectivity OK"
 else
 	echo "WARNING: Open WebUI cannot reach agent API at host.docker.internal:${AGENT_PORT}" >&2
-	echo "Run: ./scripts/ensure-ada-agent-server.sh && ./scripts/restart-mlx.sh" >&2
+	echo "Run: ./scripts/ensure-ada-agent-server.sh" >&2
 fi
 
 if command -v open >/dev/null 2>&1; then

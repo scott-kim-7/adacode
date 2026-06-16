@@ -513,7 +513,7 @@ def write_full_regression_report(
 		"```bash",
 		"./scripts/verify-regression-full.sh",
 		"./scripts/verify-regression-full.sh --benchmark-mode full   # 며칠 소요",
-		"./scripts/verify-regression-full.sh --start-stack --update-baseline",
+		"./scripts/verify-regression-full.sh --update-baseline",
 		"```",
 		"",
 	])

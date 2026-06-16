@@ -7,6 +7,7 @@ from typing import Any
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
+from ada.agent.stream_sink import StreamContext
 from ada.llm import ChatCompletionResult, ChatMessage, LLMClient, MessageContent, make_client
 from ada.registry import Profile, get_profile, load_registry
 
@@ -34,13 +35,30 @@ def make_llm_callable(
 	profile: Profile,
 	vault_password: str | None = None,
 	client_factory: Callable[[Profile], LLMClient] | None = None,
+	stream_context: StreamContext | None = None,
 ) -> Callable[[list[BaseMessage]], str]:
 	if client_factory is None:
 		client_factory = lambda p: make_client(p, vault_password=vault_password)
 	client = client_factory(profile)
 
 	def call_llm(messages: list[BaseMessage]) -> str:
-		return client.chat(_to_chat_messages(messages))
+		chat_messages = _to_chat_messages(messages)
+		if (
+			stream_context is not None
+			and stream_context.allow_stream
+			and stream_context.sink is not None
+		):
+			channel = stream_context.stream_channel()
+
+			def on_delta(token: str) -> None:
+				stream_context.sink.push(token, channel=channel)  # type: ignore[union-attr]
+
+			result = client.chat_completion_stream(
+				chat_messages,
+				on_delta=on_delta,
+			)
+			return result.content or ""
+		return client.chat(chat_messages)
 
 	return call_llm
 

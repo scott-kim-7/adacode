@@ -1,13 +1,13 @@
 [
 	{
 		"vendor": "customendpoint",
-		"name": "Local Qwen",
+		"name": "Local LLM",
 		"apiKey": "local",
 		"apiType": "chat-completions",
 		"models": [
 			{
-				"id": "mlx-community/Qwen3-VL-32B-Instruct-8bit",
-				"name": "Qwen3-VL-32B-Instruct (MLX 8-bit)",
+				"id": "openapi-resolved",
+				"name": "Local LLM (from GET /v1/models)",
 				"url": "http://127.0.0.1:8080",
 				"toolCalling": true,
 				"vision": true,

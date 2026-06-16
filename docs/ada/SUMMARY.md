@@ -25,7 +25,7 @@
 | Step | 내용 | 상태 |
 |------|------|------|
 | **0** | adacode fork·빌드·실행 | ✓ |
-| **1** | 로컬 Qwen + Cursor형 IDE (채팅·#파일·diff·Agent) | ✓ |
+| **1** | 로컬 MLX + VS Code fork IDE (아카이브) | ✓ |
 | **1b** | Step 1 마무리 — Go/No-Go, VL 이미지 한계 문서화 | ✓ |
 | **2** | Model Registry + 외부 LLM + **3자 Tri-Chat** | 진행 중 |
 | **3** | 자율 Agent (계획·실행·검증) | — |

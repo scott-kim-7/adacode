@@ -1,0 +1,66 @@
+{
+  "recorded_at": "2026-06-07T13:25:08Z",
+  "stack": {
+    "agent_reachable": true,
+    "mlx_reachable": true,
+    "endpoint": "http://127.0.0.1:8082/v1"
+  },
+  "mode": "full",
+  "benchmarks": {
+    "tau2": {
+      "pass_rate": 1.0,
+      "tasks_passed": 5,
+      "tasks_total": 5,
+      "mode": "smoke",
+      "timestamp": "2026-06-07T13:15:20Z",
+      "duration_sec": 2.16,
+      "model": "openapi-resolved",
+      "endpoint": "http://127.0.0.1:8082/v1",
+      "source": "harness-fallback"
+    },
+    "bfcl": {
+      "pass_rate": 1.0,
+      "tasks_passed": 10,
+      "tasks_total": 10,
+      "mode": "smoke",
+      "timestamp": "2026-06-07T13:16:57Z",
+      "duration_sec": 94.99,
+      "model": "openapi-resolved",
+      "endpoint": "http://127.0.0.1:8082/v1",
+      "source": "harness-fallback"
+    },
+    "swe": {
+      "pass_rate": 1.0,
+      "tasks_passed": 1,
+      "tasks_total": 1,
+      "mode": "smoke",
+      "timestamp": "2026-06-07T13:17:01Z",
+      "duration_sec": 1.41,
+      "model": "openapi-resolved",
+      "endpoint": "http://127.0.0.1:8082/v1",
+      "source": "harness-fallback"
+    },
+    "toolsandbox": {
+      "pass_rate": 1.0,
+      "tasks_passed": 3,
+      "tasks_total": 3,
+      "mode": "smoke",
+      "timestamp": "2026-06-07T13:18:19Z",
+      "duration_sec": 76.74,
+      "model": "openapi-resolved",
+      "endpoint": "http://127.0.0.1:8082/v1",
+      "source": "harness-fallback"
+    },
+    "mcpagent": {
+      "pass_rate": 1.0,
+      "tasks_passed": 5,
+      "tasks_total": 5,
+      "mode": "smoke",
+      "timestamp": "2026-06-07T13:19:30Z",
+      "duration_sec": 69.03,
+      "model": "openapi-resolved",
+      "endpoint": "http://127.0.0.1:8082/v1",
+      "source": "harness-fallback"
+    }
+  }
+}

@@ -99,7 +99,6 @@ def test_llm_client_payload_accepts_multimodal_content():
 		label="test",
 		provider="openai-compatible",
 		base_url="http://127.0.0.1:8080/v1",
-		model="test-model",
 		api_key="local",
 	)
 	client = LLMClient(profile, api_key="local")

@@ -1,19 +1,19 @@
-# Step 1 — 로컬 Qwen 72B + Cursor형 adacode
+# Step 1 — 로컬 MLX + VS Code fork (아카이브)
 
-```bash
-./scripts/adacode.sh
-```
-
-위 한 줄로 MLX 서버 + IDE를 함께 실행합니다. 상세: [README.md](../README.md#실행-step-1)
+> **2026-06:** 메인 UI는 **Open WebUI** (`./scripts/ada.sh`)로 전환되었습니다.  
+> Step 1은 adacode(VS Code fork) + Copilot BYOK 시절의 기록입니다.  
+> 현재 운영 가이드: [docs/ada/README.md](../README.md), [web/README.md](../web/README.md)
 
 ---
 
-adacode(VS Code fork)에 **MLX Qwen3-VL-32B-Instruct**를 연결해 Copilot Chat(BYOK Custom Endpoint)으로 Cursor와 같은 채팅·`#파일`·diff·Agent UX를 사용합니다.
+adacode(VS Code fork)에 **로컬 MLX OpenAPI 서버**를 연결해 Copilot Chat(BYOK Custom Endpoint)으로 Cursor형 채팅·`#파일`·diff·Agent UX를 사용했습니다.
 
-## 사전 조건
+**모델 ID는 소스에 하드코딩하지 않습니다.** BYOK JSON의 `id`는 `GET http://127.0.0.1:8080/v1/models` 응답의 첫 항목과 일치해야 합니다. 예시는 [`chatLanguageModels.example.json`](chatLanguageModels.example.json) 참고.
 
-- Phase 0 완료: `npm run compile`, `./scripts/code.sh`
-- M4 Max 128GB 권장 (Qwen 72B Q4)
+## 사전 조건 (당시)
+
+- Phase 0: `npm run compile`, `./scripts/code.sh`
+- Apple Silicon + 충분한 RAM
 - Python 3.11+
 
 ## 1. MLX 환경 (최초 1회)
@@ -25,139 +25,68 @@ source .venv-mlx/bin/activate
 pip install -U mlx-lm mlx-vlm
 ```
 
-## 2. 모델 미리 받기 (선택, 권장)
+## 2. 모델 미리 받기 (선택)
 
-IDE/서버 실행 전에 Hugging Face 캐시에만 받아 둘 수 있습니다. RAM에 올리지 않고 **다운로드만** 합니다.
+HF 캐시에만 다운로드 (RAM 로드 없음):
 
 ```bash
-./scripts/download-qwen-model.sh
+export ADA_MLX_MODEL=org/repo-name   # Hugging Face repo id
+./scripts/download-mlx-model.sh
 ```
-
-약 **40GB+**, 중단 후 재실행하면 이어받기(resume)됩니다. 캐시 위치: `~/.cache/huggingface/hub`
 
 검증:
 
 ```bash
-./scripts/verify-qwen-download.sh          # 캐시만 (빠름, RAM 안 씀)
-./scripts/verify-qwen-download.sh --smoke  # + MLX 서버에 한 줄 질의
+./scripts/verify-mlx-download.sh          # 캐시만
+./scripts/verify-mlx-download.sh --smoke  # + :8080 OpenAPI 한 줄 질의
 ```
 
-## 3. MLX-VLM 서버 기동 (vision / 이미지 지원)
+## 3. LLM 서버 (외부 기동)
+
+Ada는 **MLX 서버를 기동·종료하지 않습니다.** `mlx_lm` 또는 `mlx-vlm`을 별도로 `:8080`에 띄운 뒤:
 
 ```bash
-./scripts/serve-qwen.sh
+curl -sf http://127.0.0.1:8080/v1/models
 ```
-
-`mlx-vlm` OpenAI 서버 — **이미지 첨부(`image_url`) 지원**. 구 `mlx_lm` 서버가 8080에 있으면 `./scripts/stop-mlx-server.sh` 후 재시작.
-
-서버 첫 기동 시 캐시에 없으면 그때 다운로드합니다 (`download-qwen-model.sh` 로 미리 받아 두면 생략).
 
 환경 변수:
 
 | 변수 | 기본값 | 설명 |
 |------|--------|------|
-| `ADA_MLX_MODEL` | `mlx-community/Qwen3-VL-32B-Instruct-8bit` | HF 모델 ID |
-| `ADA_MLX_DISPLAY_NAME` | `Qwen3-VL-32B-Instruct (MLX 8-bit)` | 표시 이름 |
+| `ADA_MLX_MODEL` | *(필수, 다운로드 시)* | HF repo id — `download-mlx-model.sh` |
+| `ADA_MLX_DISPLAY_NAME` | `$ADA_MLX_MODEL` | 캐시 검증 표시 이름 |
 | `ADA_MLX_HOST` | `127.0.0.1` | 바인드 주소 |
-| `ADA_MLX_PORT` | `8080` | 포트 |
+| `ADA_MLX_PORT` | `8080` | OpenAPI 포트 |
 
 헬스체크:
 
 ```bash
 ./scripts/verify-step1-mlx.sh
-./scripts/verify-step1-vision.sh   # 이미지 multimodal smoke test
+./scripts/verify-step1-vision.sh
 ```
 
 ## 4. adacode BYOK 설정
 
-### 4.1 GitHub 로그인 주의
-
-BYOK는 **GitHub 미로그인** 상태에서 가장 단순합니다. Enterprise 정책으로 BYOK가 막힐 수 있습니다.
-
-### 4.2 모델 등록
-
-Command Palette → **Chat: Configure Language Models** → **Custom Endpoint** 그룹 추가
-
-또는 예시 JSON을 사용자 프로필에 복사:
+Command Palette → **Chat: Configure Language Models** → **Custom Endpoint**
 
 ```bash
-# Code-OSS 기본 프로필
-PROFILE="$HOME/.vscode-oss/User"
-mkdir -p "$PROFILE"
-cp docs/ada/step1/chatLanguageModels.example.json "$PROFILE/chatLanguageModels.json"
+./scripts/install-step1.sh
 ```
 
-Dev 빌드(`./scripts/code.sh`, `VSCODE_DEV=1`) 프로필:
+예시 JSON: [`chatLanguageModels.example.json`](chatLanguageModels.example.json)
 
-- macOS: `~/Library/Application Support/code-oss-dev/User/`
-- Linux: `~/.config/code-oss-dev/User/`
-
-설치: `./scripts/install-step1.sh` (경로 자동 해석)
-
-### 4.3 settings.json (권장)
-
-[`settings.example.json`](settings.example.json) 내용을 사용자 `settings.json`에 추가:
-
-```json
-{
-  "chat.agent.enabled": true
-}
-```
-
-또는:
+## 5. IDE 실행 (아카이브)
 
 ```bash
-./scripts/install-step1.sh              # chatLanguageModels + settings.json
-```
-
-## 5. IDE 실행
-
-```bash
-# 터미널 1: MLX (이미 기동 중이면 생략)
-./scripts/serve-qwen.sh
-
-# 터미널 2
 export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && nvm use 24.15.0
 ./scripts/code.sh
 ```
 
-채팅 패널 → 모델 피커 → **Other Models** → **Qwen3-VL-32B-Instruct (MLX 8-bit)** → Agent 모드.
+모델 피커 → **Other Models** → BYOK에 등록한 로컬 LLM 표시 이름 선택.
 
-### 모델이 목록에 없을 때
-
-BYOK 설정이 **잘못된 폴더**에 있으면 Qwen이 안 보입니다. macOS dev 빌드는:
-
-`~/Library/Application Support/code-oss-dev/User/chatLanguageModels.json`
-
-```bash
-./scripts/install-step1.sh
-# IDE 완전 종료(Cmd+Q) 후
-./scripts/adacode.sh
-```
-
-모델 피커에서 **Other Models** 를 펼친 뒤 **Qwen3-VL-32B-Instruct (MLX 8-bit)** 를 선택하세요.
-
-## 6. Cursor 대응 기능
-
-| Cursor | adacode Step 1 |
-|--------|----------------|
-| `@file` | `#파일명` (채팅 입력 `#`) |
-| Chat | Copilot Chat 패널 |
-| Agent | `agent` participant |
-| diff Accept | ChatEditing Accept |
-
-## 7. Go/No-Go 체크리스트
-
-- [x] `./scripts/verify-step1.sh` — 자동 검증 (HF 캐시 포함)
-- [x] Qwen 72B chat completion
-- [x] BYOK + `chat.agent.enabled` 설치
-- [x] IDE `./scripts/adacode.sh` → 채팅·`#파일`·diff·Agent·**이미지**
+## Go/No-Go
 
 완료 기록: [COMPLETE.md](COMPLETE.md)
-
-## 8. 이미지 (mlx-vlm)
-
-[`verify-step1-vision.sh`](../../../scripts/verify-step1-vision.sh) — [TROUBLESHOOTING.md](TROUBLESHOOTING.md#채팅-이미지-첨부)
 
 ## 트러블슈팅
 
@@ -165,8 +94,7 @@ BYOK 설정이 **잘못된 폴더**에 있으면 Qwen이 안 보입니다. macOS
 
 ## 관련 파일
 
-- [`scripts/verify-qwen-download.sh`](../../../scripts/verify-qwen-download.sh)
-- [`scripts/download-qwen-model.sh`](../../../scripts/download-qwen-model.sh)
-- [`scripts/serve-qwen.sh`](../../../scripts/serve-qwen.sh)
+- [`scripts/download-mlx-model.sh`](../../../scripts/download-mlx-model.sh)
+- [`scripts/verify-mlx-download.sh`](../../../scripts/verify-mlx-download.sh)
+- [`scripts/ada.sh`](../../../scripts/ada.sh) — 현재 web 스택 (Agent + Open WebUI)
 - [`chatLanguageModels.example.json`](chatLanguageModels.example.json)
-- [BUILD.md](../BUILD.md)

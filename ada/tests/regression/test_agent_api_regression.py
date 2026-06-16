@@ -12,7 +12,7 @@ from regression.conftest import regression_agent_config
 
 
 def test_regression_chat_completion_response_openai_shape():
-	body = build_chat_completion_response("mlx-community/Qwen3-VL-32B-Instruct-8bit", "hello")
+	body = build_chat_completion_response("test-model", "hello")
 	assert body["object"] == "chat.completion"
 	assert body["choices"][0]["message"]["role"] == "assistant"
 	assert body["choices"][0]["message"]["content"] == "hello"
@@ -23,10 +23,14 @@ def test_regression_chat_completion_response_openai_shape():
 def test_regression_stream_true_returns_buffered_json_not_sse():
 	app = create_app()
 
-	def fake_run(_messages, _llm, config=None):
+	def fake_run(_messages, _llm, config=None, stream_context=None):
 		return "buffered"
 
-	with patch("ada.agent.server.run_chat_completion", side_effect=fake_run):
+	with (
+		patch("ada.agent.server.FORCE_NON_STREAM", True),
+		patch("ada.agent.server.effective_model_id", return_value="test-model"),
+		patch("ada.agent.server.run_chat_completion", side_effect=fake_run),
+	):
 		client = TestClient(app)
 		resp = client.post(
 			"/v1/chat/completions",
@@ -44,24 +48,50 @@ def test_regression_stream_true_returns_buffered_json_not_sse():
 	assert payload["choices"][0]["message"]["content"] == "buffered"
 
 
+def test_regression_stream_true_returns_sse_by_default():
+	app = create_app()
+
+	def fake_streaming(messages, llm_callable, stream_sink, config=None, stream_context=None):
+		stream_sink.push("tok")
+		stream_sink.finish()
+		return "tok"
+
+	with (
+		patch("ada.agent.server.effective_model_id", return_value="test-model"),
+		patch("ada.agent.server.run_chat_completion_streaming", side_effect=fake_streaming),
+	):
+		client = TestClient(app)
+		with client.stream(
+			"POST",
+			"/v1/chat/completions",
+			json={
+				"model": "test",
+				"messages": [{"role": "user", "content": "ping"}],
+				"stream": True,
+			},
+		) as resp:
+			assert resp.status_code == 200
+			assert "text/event-stream" in resp.headers["content-type"]
+			body = "".join(resp.iter_text())
+			assert "tok" in body
+			assert "[DONE]" in body
+
+
 def test_regression_health_endpoint():
 	app = create_app()
 	client = TestClient(app)
 	resp = client.get("/health")
 	assert resp.status_code == 200
 	assert resp.json()["status"] == "ok"
-	assert "model" in resp.json()
+	assert "endpoint" in resp.json()
 
 
-def test_regression_models_fallback_when_mlx_unreachable():
+def test_regression_models_errors_when_mlx_unreachable():
 	app = create_app()
 	with patch("httpx.AsyncClient.get", side_effect=httpx.ConnectError("down")):
-		client = TestClient(app)
+		client = TestClient(app, raise_server_exceptions=False)
 		resp = client.get("/v1/models", headers={"Authorization": "Bearer local"})
-	assert resp.status_code == 200
-	data = resp.json()
-	assert data["object"] == "list"
-	assert len(data["data"]) >= 1
+	assert resp.status_code == 503
 
 
 def test_regression_text_chat_end_to_end_mocked():

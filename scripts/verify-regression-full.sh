@@ -3,9 +3,10 @@
 #
 # Usage:
 #   ./scripts/verify-regression-full.sh                    # smoke benchmarks (~10–30 min)
-#   ./scripts/verify-regression-full.sh --start-stack      # start MLX/Agent if down
 #   ./scripts/verify-regression-full.sh --update-baseline  # refresh baseline.json
 #   ./scripts/verify-regression-full.sh --benchmark-mode full   # WARNING: days on local MLX
+#
+# Prerequisite: MLX :8080 and Ada Agent :8082 must already be running.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -18,7 +19,6 @@ EVAL_JUNIT="$REPORTS/.tmp-eval-smoke-junit.xml"
 STEPS_JSON="$REPORTS/.tmp-full-regression-steps.json"
 
 BENCHMARK_MODE="smoke"
-START_STACK=0
 UPDATE_BASELINE=0
 SKIP_BENCHMARKS=0
 
@@ -27,11 +27,13 @@ usage() {
 Usage: $(basename "$0") [options]
 
 Options:
-  --start-stack         Start MLX + Agent via ./scripts/ada.sh start if down
   --benchmark-mode MODE smoke (default) or full
   --update-baseline     Write benchmark results into baseline.json
   --skip-benchmarks     Skip live benchmark scripts (pytest + contract only)
   -h, --help            Show this help
+
+Prerequisite:
+  MLX :8080 and Ada Agent :8082 must already be running.
 
 Output:
   ada/src/ada/eval/reports/full-regression-latest.md
@@ -43,7 +45,6 @@ EOF
 
 while [[ $# -gt 0 ]]; do
 	case "$1" in
-		--start-stack) START_STACK=1 ;;
 		--benchmark-mode)
 			BENCHMARK_MODE="${2:?mode required}"
 			shift
@@ -162,16 +163,11 @@ AGENT_UP="$(python -c "import json; print(json.loads('''$STACK_JSON''')['agent_r
 MLX_UP="$(python -c "import json; print(json.loads('''$STACK_JSON''')['mlx_reachable'])")"
 
 if [[ "$AGENT_UP" != "True" || "$MLX_UP" != "True" ]]; then
-	if [[ "$START_STACK" -eq 1 ]]; then
-		run_step "Start stack (ada.sh start)" "$SCRIPTS/ada.sh" start
-		sleep 5
-	else
-		echo ""
-		echo "ERROR: Agent :8082 and MLX :8080 must be running for full regression." >&2
-		echo "  ./scripts/ada.sh start" >&2
-		echo "  or re-run with --start-stack" >&2
-		exit 1
-	fi
+	echo ""
+	echo "ERROR: Agent :8082 and MLX :8080 must be running for full regression." >&2
+	echo "  Start LLM server on :8080, then: ./scripts/ensure-ada-agent-server.sh" >&2
+	echo "  Or: ./scripts/ada.sh start  (MLX must already be up)" >&2
+	exit 1
 fi
 
 export ADA_EVAL_RUN_LIVE=1

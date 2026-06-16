@@ -6,8 +6,8 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # shellcheck source=ada/mlx_defaults.sh
 source "$ROOT/scripts/ada/mlx_defaults.sh"
 
-HOST="${ADA_MLX_HOST:-127.0.0.1}"
-PORT="${ADA_MLX_PORT:-8080}"
+HOST="$(ada_mlx_host)"
+PORT="$(ada_mlx_port)"
 WEBUI_PORT="${ADA_OPEN_WEBUI_PORT:-3000}"
 CONTAINER="${ADA_OPEN_WEBUI_CONTAINER:-adacode-open-webui}"
 
@@ -26,10 +26,10 @@ fi
 
 echo ""
 echo "[2] MLX (http://${HOST}:${PORT})"
-if curl -sf "http://${HOST}:${PORT}/v1/models" >/dev/null 2>&1; then
+if ada_mlx_up; then
 	ok "MLX responding at http://${HOST}:${PORT}/v1"
 else
-	fail "MLX not running — run: ./scripts/serve-qwen.sh (keep terminal open)"
+	fail "MLX not running — start mlx_lm / mlx-vlm on port ${PORT} externally"
 fi
 
 echo ""
@@ -56,7 +56,7 @@ fi
 
 echo ""
 echo "Fix (typical order):"
-echo "  1. ./scripts/serve-qwen.sh          # terminal 1, leave running"
-echo "  2. docker rm -f open-webui adacode-open-webui 2>/dev/null; true"
-echo "  3. ./scripts/serve-open-webui.sh    # terminal 2"
+echo "  1. Start LLM server on :${PORT} (external — not managed by Ada)"
+echo "  2. ./scripts/ensure-ada-agent-server.sh"
+echo "  3. ./scripts/serve-open-webui.sh"
 echo "  4. http://127.0.0.1:${WEBUI_PORT}"
