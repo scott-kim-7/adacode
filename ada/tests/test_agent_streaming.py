@@ -16,9 +16,15 @@ from ada.agent.config import (
 	VisionConfig,
 )
 from ada.agent.llm import make_llm_callable
-from ada.agent.nodes import plan_node, respond_node
+from ada.agent.nodes import plan_node, respond_node, route_node
 from ada.agent.server import create_app
-from ada.agent.stream_sink import StreamChunk, StreamContext, StreamSink
+from ada.agent.stream_sink import (
+	THINK_CLOSE,
+	THINK_OPEN,
+	StreamChunk,
+	StreamContext,
+	StreamSink,
+)
 from ada.llm import ChatCompletionResult
 from ada.registry import Profile
 
@@ -44,7 +50,7 @@ def _direct_config() -> AgentConfig:
 	)
 
 
-def _plan_config(*, plan_fallback_tags: bool = False) -> AgentConfig:
+def _plan_config(*, inline_thinking: bool = True) -> AgentConfig:
 	return AgentConfig(
 		system_prompt="",
 		routing=RoutingConfig(plan_min_chars=1, plan_keywords=()),
@@ -52,7 +58,7 @@ def _plan_config(*, plan_fallback_tags: bool = False) -> AgentConfig:
 		respond=RespondConfig(include_plan_hint=False),
 		verify=VerifyConfig(max_empty_retries=0),
 		vision=VisionConfig(image_only_prompt=""),
-		stream=StreamConfig(plan_fallback_tags=plan_fallback_tags),
+		stream=StreamConfig(inline_thinking=inline_thinking, plan_fallback_tags=inline_thinking),
 	)
 
 
@@ -91,11 +97,31 @@ def test_respond_node_streams_tokens_to_sink():
 	assert ctx.allow_stream is False
 
 
-def test_plan_node_streams_reasoning_channel():
+def test_plan_node_inline_thinking_uses_content_with_tags():
 	sink = StreamSink()
-	ctx = StreamContext(sink=sink, plan_fallback_tags=False)
+	ctx = StreamContext(sink=sink, inline_thinking=True)
 	llm = make_llm_callable(_profile(), client_factory=lambda _p: FakeClient(), stream_context=ctx)
-	node = plan_node(_plan_config(plan_fallback_tags=False), llm, ctx)
+	node = plan_node(_plan_config(inline_thinking=True), llm, ctx)
+	node(
+		{
+			"messages": [HumanMessage(content="design a system")],
+			"plan": "",
+			"empty_retries": 0,
+		}
+	)
+	chunks = _collect_chunks(sink)
+	joined = "".join(c.text for c in chunks)
+	assert chunks
+	assert all(c.channel == "content" for c in chunks)
+	assert THINK_OPEN.strip() in joined
+	assert "안녕" in joined
+
+
+def test_plan_node_legacy_mode_uses_reasoning_channel():
+	sink = StreamSink()
+	ctx = StreamContext(sink=sink, inline_thinking=False)
+	llm = make_llm_callable(_profile(), client_factory=lambda _p: FakeClient(), stream_context=ctx)
+	node = plan_node(_plan_config(inline_thinking=False), llm, ctx)
 	node(
 		{
 			"messages": [HumanMessage(content="design a system")],
@@ -108,22 +134,69 @@ def test_plan_node_streams_reasoning_channel():
 	assert all(c.channel == "reasoning" for c in chunks)
 
 
-def test_plan_node_fallback_tags_use_content_channel():
+def test_respond_closes_thinking_before_answer():
 	sink = StreamSink()
-	ctx = StreamContext(sink=sink, plan_fallback_tags=True)
+	ctx = StreamContext(sink=sink, inline_thinking=True)
 	llm = make_llm_callable(_profile(), client_factory=lambda _p: FakeClient(), stream_context=ctx)
-	node = plan_node(_plan_config(plan_fallback_tags=True), llm, ctx)
-	node(
+	plan = plan_node(_plan_config(), llm, ctx)
+	plan(
 		{
 			"messages": [HumanMessage(content="design a system")],
 			"plan": "",
 			"empty_retries": 0,
 		}
 	)
-	chunks = _collect_chunks(sink)
-	assert chunks
-	assert all(c.channel == "content" for c in chunks)
-	assert chunks[0].text.startswith("\n")
+	respond = respond_node(_plan_config(), llm, ctx)
+	respond(
+		{
+			"messages": [HumanMessage(content="design a system")],
+			"plan": "step 1",
+			"empty_retries": 0,
+		}
+	)
+	joined = "".join(c.text for c in _collect_chunks(sink))
+	assert THINK_OPEN.strip() in joined
+	assert THINK_CLOSE.strip() in joined
+	assert joined.index(THINK_CLOSE.strip()) < joined.rindex("안")
+
+
+def test_route_node_emits_plan_trace():
+	sink = StreamSink()
+	ctx = StreamContext(sink=sink, inline_thinking=True)
+	node = route_node(_plan_config(), ctx)
+	node(
+		{
+			"messages": [HumanMessage(content="design a system architecture")],
+			"plan": "",
+			"empty_retries": 0,
+		}
+	)
+	joined = "".join(c.text for c in _collect_chunks(sink))
+	assert "[route] plan" in joined
+	assert THINK_OPEN.strip() in joined
+
+
+def test_route_node_emits_direct_trace():
+	sink = StreamSink()
+	ctx = StreamContext(sink=sink, inline_thinking=True, trace_direct_route=True)
+	cfg = AgentConfig(
+		system_prompt="",
+		routing=RoutingConfig(plan_min_chars=999, plan_keywords=()),
+		plan=PlanConfig(enabled=True, prompt="plan"),
+		respond=RespondConfig(include_plan_hint=False),
+		verify=VerifyConfig(max_empty_retries=0),
+		vision=VisionConfig(image_only_prompt=""),
+	)
+	node = route_node(cfg, ctx)
+	node(
+		{
+			"messages": [HumanMessage(content="hi")],
+			"plan": "",
+			"empty_retries": 0,
+		}
+	)
+	joined = "".join(c.text for c in _collect_chunks(sink))
+	assert "[route] direct" in joined
 
 
 def test_stream_sink_finish_marks_done():

@@ -92,10 +92,10 @@ Open WebUI Connections URL: `http://host.docker.internal:8082/v1` (키: `local`)
 
 `./scripts/ada.sh restart` 후 Open WebUI에서 **새 채팅**을 열면 LangGraph LLM 출력이 SSE로 실시간 표시됩니다.
 
-| 구간 | SSE 필드 | UI |
-|------|----------|-----|
-| **plan** 노드 | `reasoning_content` (또는 `stream.plan_fallback_tags` 시 `…` content) | 접힌 thinking |
-| **respond** 노드 | `content` | 채팅 본문 |
+| 구간 | SSE | UI (Open WebUI) |
+|------|-----|-----------------|
+| route / plan / verify trace | `content` (`<think>` 안) | 같은 말풍선 안 **접이식 Thinking** |
+| **respond** 노드 | `content` (태그 밖) | 말풍선 본문 답변 |
 
 | 모드 | 동작 |
 |------|------|
@@ -103,7 +103,7 @@ Open WebUI Connections URL: `http://host.docker.internal:8082/v1` (키: `local`)
 | `ADA_AGENT_FORCE_NON_STREAM=1` | buffered JSON (구 Open WebUI 호환) |
 | tools 요청 | 항상 buffered |
 
-설정: [`ada/config/agent.yaml`](../../config/agent.yaml) → `stream.plan_fallback_tags`
+설정: [`ada/config/agent.yaml`](../../config/agent.yaml) → `stream.inline_thinking`, `expose_graph_trace`
 
 검증:
 

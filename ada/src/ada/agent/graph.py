@@ -32,10 +32,10 @@ def build_main_agent_graph(
 
 	graph = StateGraph(AgentState)
 	graph.add_node("prepare", prepare_node(cfg))
-	graph.add_node("route", route_node(cfg))
+	graph.add_node("route", route_node(cfg, stream_context))
 	graph.add_node("plan", plan_node(cfg, llm_callable, stream_context))
 	graph.add_node("respond", respond_node(cfg, llm_callable, stream_context))
-	graph.add_node("bump_retry", bump_retry_node())
+	graph.add_node("bump_retry", bump_retry_node(stream_context))
 	graph.add_node("finalize", finalize_node(cfg))
 
 	graph.add_edge(START, "prepare")

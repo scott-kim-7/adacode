@@ -38,5 +38,7 @@ tools:
   timeout_sec: 300
 
 stream:
-  # plan_fallback_tags: true → plan in … content; false → reasoning_content SSE
-  plan_fallback_tags: true
+  # ChatGPT-style inline collapsible thinking in the same message bubble
+  inline_thinking: true
+  expose_graph_trace: true   # [route] / [verify] trace inside thinking block
+  trace_direct_route: true   # show [route] direct for short messages

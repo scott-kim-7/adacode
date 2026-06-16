@@ -137,7 +137,9 @@ def create_app() -> FastAPI:
 				sink = StreamSink()
 				stream_ctx = StreamContext(
 					sink=sink,
-					plan_fallback_tags=cfg.stream.plan_fallback_tags,
+					inline_thinking=cfg.stream.inline_thinking,
+					expose_graph_trace=cfg.stream.expose_graph_trace,
+					trace_direct_route=cfg.stream.trace_direct_route,
 				)
 				streaming_llm = make_llm_callable(profile, stream_context=stream_ctx)
 

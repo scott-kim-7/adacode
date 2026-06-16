@@ -124,9 +124,18 @@ async def main() -> int:
 	for url, label in targets:
 		name, content, reasoning, err = await test(url, label, user_content=user_content)
 		print(
-			f"RESULT {name} err={err} content={content[:80]!r} "
+			f"RESULT {name} err={err} content={content[:120]!r} "
 			f"reasoning={reasoning[:80]!r}"
 		)
+		if args.plan_smoke and label.startswith("agent"):
+			if err:
+				continue
+			if "<think>" not in content:
+				print(f"{name}: expected inline thinking tags in content", file=sys.stderr)
+				continue
+			if "[route] plan" not in content:
+				print(f"{name}: expected [route] plan trace in content", file=sys.stderr)
+				continue
 		if (content or reasoning) and not err:
 			ok = True
 

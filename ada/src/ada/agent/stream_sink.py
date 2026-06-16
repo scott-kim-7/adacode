@@ -7,9 +7,9 @@ from typing import Literal
 StreamChannel = Literal["content", "reasoning"]
 StreamPhase = Literal["plan", "respond"]
 
-# Open WebUI / Qwen-style collapsed plan (plan_fallback_tags mode)
-THINK_OPEN = "\n\n\u003cthink\u003e\n"
-THINK_CLOSE = "\n\u003c/think\u003e\n\n"
+# Open WebUI 0.8.x inline collapsible thinking (ChatGPT-style, same message bubble)
+THINK_OPEN = "\n\n<think>\n"
+THINK_CLOSE = "\n</think>\n\n"
 
 
 @dataclass(frozen=True)
@@ -59,25 +59,53 @@ class StreamContext:
 	sink: StreamSink | None = None
 	allow_stream: bool = False
 	phase: StreamPhase | None = None
-	plan_fallback_tags: bool = False
-	_plan_tag_open: bool = False
+	inline_thinking: bool = True
+	expose_graph_trace: bool = True
+	trace_direct_route: bool = True
+	_thinking_open: bool = False
 
 	def stream_channel(self) -> StreamChannel:
+		if self.inline_thinking:
+			return "content"
 		if self.phase == "plan":
-			return "content" if self.plan_fallback_tags else "reasoning"
+			return "reasoning"
 		return "content"
+
+	def _push_content(self, text: str) -> None:
+		if self.sink is not None and text:
+			self.sink.push(text, channel="content")
+
+	def open_thinking(self) -> None:
+		if not self.inline_thinking or self.sink is None or self._thinking_open:
+			return
+		self._push_content(THINK_OPEN)
+		self._thinking_open = True
+
+	def close_thinking(self) -> None:
+		if not self.inline_thinking or self.sink is None or not self._thinking_open:
+			return
+		self._push_content(THINK_CLOSE)
+		self._thinking_open = False
+
+	def emit_trace(self, text: str) -> None:
+		if not self.expose_graph_trace or self.sink is None:
+			return
+		line = text if text.endswith("\n") else f"{text}\n"
+		if self.inline_thinking:
+			self.open_thinking()
+			self._push_content(line)
+		else:
+			self.sink.push(line, channel="reasoning")
 
 	def begin_plan_stream(self) -> None:
 		self.phase = "plan"
 		self.allow_stream = True
-		if self.plan_fallback_tags and self.sink is not None:
-			self.sink.push(THINK_OPEN, channel="content")
-			self._plan_tag_open = True
+		self.open_thinking()
 
 	def begin_respond_stream(self, *, had_plan: bool = False) -> None:
-		if had_plan and self.plan_fallback_tags and self._plan_tag_open and self.sink is not None:
-			self.sink.push(THINK_CLOSE, channel="content")
-			self._plan_tag_open = False
+		del had_plan
+		if self._thinking_open:
+			self.close_thinking()
 		self.phase = "respond"
 		self.allow_stream = True
 

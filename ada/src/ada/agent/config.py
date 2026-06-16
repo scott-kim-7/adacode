@@ -43,7 +43,11 @@ class ToolsConfig:
 
 @dataclass(frozen=True)
 class StreamConfig:
-	# When true, plan tokens stream as content inside … (OW 0.8.x fallback).
+	# ChatGPT-style inline collapsible thinking in the same message bubble (content SSE).
+	inline_thinking: bool = True
+	expose_graph_trace: bool = True
+	trace_direct_route: bool = True
+	# Legacy alias for inline_thinking (yaml key plan_fallback_tags).
 	plan_fallback_tags: bool = True
 
 
@@ -114,6 +118,19 @@ def load_agent_config(path: Path | None = None) -> AgentConfig:
 			timeout_sec=int(tools_raw.get("timeout_sec") or 300),
 		),
 		stream=StreamConfig(
-			plan_fallback_tags=bool(stream_raw.get("plan_fallback_tags", True)),
+			inline_thinking=bool(
+				stream_raw.get(
+					"inline_thinking",
+					stream_raw.get("plan_fallback_tags", True),
+				)
+			),
+			expose_graph_trace=bool(stream_raw.get("expose_graph_trace", True)),
+			trace_direct_route=bool(stream_raw.get("trace_direct_route", True)),
+			plan_fallback_tags=bool(
+				stream_raw.get(
+					"plan_fallback_tags",
+					stream_raw.get("inline_thinking", True),
+				)
+			),
 		),
 	)

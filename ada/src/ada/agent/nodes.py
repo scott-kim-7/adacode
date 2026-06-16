@@ -46,19 +46,32 @@ def prepare_node(config: AgentConfig) -> Callable[[AgentState], dict]:
 	return prepare
 
 
-def route_node(config: AgentConfig) -> Callable[[AgentState], dict]:
+def route_node(
+	config: AgentConfig,
+	stream_context: StreamContext | None = None,
+) -> Callable[[AgentState], dict]:
 	keywords = [keyword.lower() for keyword in config.routing.plan_keywords]
 
 	def route(state: AgentState) -> dict:
 		if not config.plan.enabled:
-			return {"route": "direct"}
-		user_text = _latest_user_text(state.get("messages") or [])
-		lowered = user_text.lower()
-		if len(user_text) >= config.routing.plan_min_chars:
-			return {"route": "plan"}
-		if any(keyword in lowered for keyword in keywords):
-			return {"route": "plan"}
-		return {"route": "direct"}
+			chosen: Route = "direct"
+		else:
+			user_text = _latest_user_text(state.get("messages") or [])
+			lowered = user_text.lower()
+			if len(user_text) >= config.routing.plan_min_chars:
+				chosen = "plan"
+			elif any(keyword in lowered for keyword in keywords):
+				chosen = "plan"
+			else:
+				chosen = "direct"
+
+		if stream_context is not None:
+			if chosen == "plan":
+				stream_context.emit_trace("[route] plan")
+			elif config.stream.trace_direct_route:
+				stream_context.emit_trace("[route] direct")
+
+		return {"route": chosen}
 
 	return route
 
@@ -128,9 +141,14 @@ def finalize_node(config: AgentConfig) -> Callable[[AgentState], dict]:
 	return finalize
 
 
-def bump_retry_node() -> Callable[[AgentState], dict]:
+def bump_retry_node(
+	stream_context: StreamContext | None = None,
+) -> Callable[[AgentState], dict]:
 	def bump_retry(state: AgentState) -> dict:
-		return {"empty_retries": state.get("empty_retries", 0) + 1}
+		retries = state.get("empty_retries", 0) + 1
+		if stream_context is not None:
+			stream_context.emit_trace(f"[verify] empty draft, retry {retries}")
+		return {"empty_retries": retries}
 
 	return bump_retry
 
