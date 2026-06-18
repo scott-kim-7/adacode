@@ -43,6 +43,7 @@ let summarySkipRules: SummarySkipRule[] = [];
 	let oauthClientId = '';
 	let oauthClientSecret = '';
 	let oauthSetupEl: HTMLDivElement | null = null;
+	let redirectUriCopied = false;
 
 	function focusOAuthSetup() {
 		oauthSetupEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -63,6 +64,21 @@ let summarySkipRules: SummarySkipRule[] = [];
 			return;
 		}
 		toast.info(oauthReadiness.steps.join(' '));
+	}
+
+	async function copyRedirectUri() {
+		const uri = oauthReadiness?.redirect_uri;
+		if (!uri) return;
+		try {
+			await navigator.clipboard.writeText(uri);
+			redirectUriCopied = true;
+			toast.success($i18n.t('Redirect URI copied'));
+			setTimeout(() => {
+				redirectUriCopied = false;
+			}, 2000);
+		} catch {
+			toast.error($i18n.t('Could not copy to clipboard'));
+		}
 	}
 
 	async function saveOAuthClient() {
@@ -304,6 +320,37 @@ let summarySkipRules: SummarySkipRule[] = [];
 						})}
 					</p>
 				</div>
+
+				{#if oauthReadiness?.redirect_uri && oauthReadiness.gmail_client}
+					<div class="mb-3 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 p-3 text-xs text-amber-950 dark:text-amber-100">
+						<div class="font-medium mb-1">{$i18n.t('Google redirect URI (required)')}</div>
+						<p class="mb-2 text-amber-900/90 dark:text-amber-100/90">
+							{$i18n.t('Add this exact URI under Authorized redirect URIs in your OAuth client. If you see redirect_uri_mismatch, the old :8082 URI must be replaced with :9082.')}
+						</p>
+						<div class="flex flex-wrap items-center gap-2 mb-2">
+							<code class="flex-1 min-w-0 break-all rounded bg-white/80 dark:bg-black/30 px-2 py-1 text-[11px]">
+								{oauthReadiness.redirect_uri}
+							</code>
+							<button
+								type="button"
+								class="shrink-0 px-2.5 py-1 border border-amber-400 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/50"
+								on:click={copyRedirectUri}
+							>
+								{redirectUriCopied ? $i18n.t('Copied') : $i18n.t('Copy redirect URI')}
+							</button>
+						</div>
+						{#if oauthReadiness.google_console_credentials_url}
+							<a
+								href={oauthReadiness.google_console_credentials_url}
+								target="_blank"
+								rel="noopener noreferrer"
+								class="underline"
+							>
+								{$i18n.t('Open Google Cloud Credentials')}
+							</a>
+						{/if}
+					</div>
+				{/if}
 
 				{#if oauthReadiness?.vault_unlocked && !oauthReadiness.gmail_client}
 					<div

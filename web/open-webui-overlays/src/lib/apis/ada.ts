@@ -168,6 +168,8 @@ export type OAuthReadiness = {
 	steps: string[];
 	redirect_uri?: string;
 	agent_port?: number;
+	google_console_credentials_url?: string;
+	redirect_uri_mismatch_hint?: string;
 };
 
 export async function getOAuthReadiness(): Promise<OAuthReadiness> {
@@ -187,6 +189,7 @@ export async function putOAuthClient(payload: {
 export async function startGmailOAuth(): Promise<{
 	authorization_url: string;
 	account_id: string;
+	redirect_uri?: string;
 }> {
 	return adaFetch('/oauth/gmail/start');
 }

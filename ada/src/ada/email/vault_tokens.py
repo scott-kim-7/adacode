@@ -7,6 +7,7 @@ from typing import Any
 from ada.vault import Vault, VaultError, VaultSession
 
 GMAIL_CLIENT_VAULT_KEY = "gmail.oauth.client"
+GOOGLE_OAUTH_CREDENTIALS_URL = "https://console.cloud.google.com/apis/credentials"
 
 
 @dataclass(frozen=True)
@@ -95,6 +96,14 @@ class GmailVaultTokens:
 			steps.append(
 				"Enter Google OAuth client ID and secret below (stored encrypted in vault), "
 				"or run: cd ada && make vault-set KEY=gmail.oauth.client"
+			)
+		if vault_unlocked and gmail_client:
+			from ada.ports import gmail_oauth_redirect_uri
+
+			uri = gmail_oauth_redirect_uri()
+			steps.append(
+				"Google Cloud Console → Credentials → your OAuth client → Authorized redirect URIs → "
+				f"add exactly: {uri} (required after Agent port change to :9082)"
 			)
 
 		return OAuthReadiness(

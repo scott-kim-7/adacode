@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from ada.email.auth import require_email_auth
 from ada.email.platform import EmailPlatform
 from ada.email.service import GmailAttachment, IngestedMessage
+from ada.email.vault_tokens import GOOGLE_OAUTH_CREDENTIALS_URL
 from ada.ports import agent_port, gmail_oauth_redirect_uri
 from ada.vault import VaultError
 
@@ -198,6 +199,7 @@ def build_email_router(
 	@router.get("/ops/email/oauth-readiness")
 	async def oauth_readiness() -> dict[str, Any]:
 		readiness = email_platform.vault_tokens.oauth_readiness()
+		redirect = gmail_oauth_redirect_uri()
 		return {
 			"ready": readiness.ready,
 			"vault_file": readiness.vault_file,
@@ -205,8 +207,13 @@ def build_email_router(
 			"gmail_client": readiness.gmail_client,
 			"gmail_client_status": readiness.gmail_client_status,
 			"steps": list(readiness.steps),
-			"redirect_uri": gmail_oauth_redirect_uri(),
+			"redirect_uri": redirect,
 			"agent_port": agent_port(),
+			"google_console_credentials_url": GOOGLE_OAUTH_CREDENTIALS_URL,
+			"redirect_uri_mismatch_hint": (
+				"If Google shows redirect_uri_mismatch, add the redirect_uri above to your "
+				"OAuth client's Authorized redirect URIs (port changed from 8082 to 9082)."
+			),
 		}
 
 	@router.put("/ops/email/oauth-client")
@@ -228,7 +235,9 @@ def build_email_router(
 	@router.get("/oauth/gmail/start")
 	async def oauth_gmail_start(account_id: str | None = None) -> dict[str, str]:
 		try:
-			return email_platform.oauth_service.start(account_id=account_id)
+			result = email_platform.oauth_service.start(account_id=account_id)
+			result["redirect_uri"] = gmail_oauth_redirect_uri()
+			return result
 		except RuntimeError as exc:
 			raise HTTPException(status_code=503, detail=str(exc)) from exc
 
