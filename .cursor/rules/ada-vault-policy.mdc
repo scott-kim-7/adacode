@@ -1,0 +1,16 @@
+---
+description: All Ada credentials must be vault-encrypted at input; no plaintext persistence
+alwaysApply: true
+---
+
+# Ada vault-only secrets
+
+When adding or changing code that handles **passwords, API keys, OAuth tokens, or account credentials**:
+
+1. **Persist only in** `ada/vault/secrets.vault.enc` via `VaultSession` / `make vault-set` / `make vault-ensure` / `store_secret_in_vault()`.
+2. **Never persist** the same secret in: `.env`, `ada/.local/`, Docker env, `localStorage`, UI fields, logs, git, or config YAML (except non-secret placeholders like `api_key: local` for MLX).
+3. **On input**: read into `bytearray` where practical → encrypt into vault → `secure_zero()` plaintext buffers.
+4. **Runtime**: unlocked `VaultSession` or derived keys in process RAM only; scrub `ADA_*_KEY`, `ADA_*_PASSWORD`, `ADA_EXTERNAL_API_KEY` via `scrub_forbidden_secret_env()`.
+5. **Browser**: no secrets in the client; use Open WebUI admin proxy (`/api/v1/ada/agent/...`).
+
+Reference: [`docs/ada/VAULT.md`](docs/ada/VAULT.md), [`ada/src/ada/vault_secrets.py`](ada/src/ada/vault_secrets.py).

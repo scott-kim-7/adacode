@@ -14,10 +14,16 @@ dependencies = [
 	"cryptography>=42.0",
 	"langgraph>=0.2.60",
 	"langchain-core>=0.3.0",
+	"fastapi>=0.115",
+	"pydantic>=2.0",
+	"uvicorn>=0.32",
+	"google-api-python-client>=2.100",
+	"google-auth-oauthlib>=1.2",
+	"google-auth-httplib2>=0.2",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "fastapi>=0.115", "uvicorn>=0.32"]
+dev = ["pytest>=8.0"]
 
 [project.scripts]
 ada = "ada.cli:main"

@@ -32,6 +32,26 @@ fi
 
 AGENT_PORT="${ADA_AGENT_PORT:-8082}"
 
+if [[ ! -d "$ROOT/web/open-webui/.git" ]]; then
+	echo "Vendoring Open WebUI v0.6.42 with Ada overlays ..."
+	"$ROOT/scripts/vendor-open-webui.sh"
+else
+	OVERLAY="${ROOT}/web/open-webui-overlays"
+	STAMP="${ROOT}/web/open-webui/.ada-overlay-stamp"
+	need_vendor=0
+	if [[ "${ADA_FORCE_VENDOR:-0}" == "1" ]]; then
+		need_vendor=1
+	elif [[ ! -f "$STAMP" ]]; then
+		need_vendor=1
+	elif [[ "$OVERLAY" -nt "$STAMP" ]]; then
+		need_vendor=1
+	fi
+	if [[ "$need_vendor" == "1" ]]; then
+		echo "Ada overlays changed — re-vendoring Open WebUI ..."
+		"$ROOT/scripts/vendor-open-webui.sh"
+	fi
+fi
+
 if ! mlx_healthy; then
 	echo "WARNING: MLX server is not running at $(mlx_url) — continuing (start mlx_vlm when ready)" >&2
 fi
@@ -46,11 +66,25 @@ if [[ "$(uname -s)" == "Linux" ]]; then
 	fi
 fi
 
+AGENT_BASE="http://host.docker.internal:${AGENT_PORT}"
+if [[ "$(uname -s)" == "Linux" ]]; then
+	AGENT_BASE="http://${MLX_HOST}:${AGENT_PORT}"
+	if [[ "$MLX_HOST" == "127.0.0.1" || "$MLX_HOST" == "localhost" ]]; then
+		AGENT_BASE="http://172.17.0.1:${AGENT_PORT}"
+	fi
+fi
+
 export ADA_OPEN_WEBUI_PORT="$WEBUI_PORT"
 export ADA_OPEN_WEBUI_CONTAINER="$CONTAINER_NAME"
 export OPENAI_API_BASE_URL="$OPENAI_BASE"
+export ADA_AGENT_BASE_URL="$AGENT_BASE"
 export OPENAI_API_KEY=local
 ada_export_webui_model_env
+
+if [[ "${ADA_OPEN_WEBUI_RESET_DATA:-0}" == "1" ]]; then
+	echo "ADA_OPEN_WEBUI_RESET_DATA=1 — resetting Open WebUI data volume ..."
+	"$ROOT/scripts/reset-open-webui-data.sh"
+fi
 
 # Remove stale container that failed to bind the port (STATUS=Created)
 if docker ps -a --format '{{.Names}} {{.Status}}' | grep -q "^${CONTAINER_NAME} Created"; then
@@ -85,10 +119,11 @@ echo "First login: create a local account (data stays on your machine)."
 echo "Stop with: docker compose -f ${COMPOSE_FILE} down"
 echo ""
 
+docker compose -f "$COMPOSE_FILE" build open-webui
 docker compose -f "$COMPOSE_FILE" up -d --force-recreate
 
 echo "Waiting for Open WebUI to become ready ..."
-for ((i = 1; i <= 60; i++)); do
+	for ((i = 1; i <= 60; i++)); do
 	if curl -sf "http://127.0.0.1:${WEBUI_PORT}/" >/dev/null 2>&1; then
 		break
 	fi
@@ -96,6 +131,12 @@ for ((i = 1; i <= 60; i++)); do
 	if [[ $i -eq 60 ]]; then
 		echo "Open WebUI did not respond on port ${WEBUI_PORT}. Check logs:" >&2
 		echo "  docker logs ${CONTAINER_NAME}" >&2
+		if docker logs "$CONTAINER_NAME" 2>&1 | grep -qE 'b2c3d4e5f6a7|access_control|Can.t locate revision'; then
+			echo "" >&2
+			echo "Likely cause: old data from ghcr.io/open-webui:main is incompatible with v0.6.42." >&2
+			echo "Fix: ADA_OPEN_WEBUI_RESET_DATA=1 ./scripts/ada.sh start" >&2
+			echo "  or: ./scripts/reset-open-webui-data.sh && ./scripts/serve-open-webui.sh" >&2
+		fi
 		exit 1
 	fi
 done

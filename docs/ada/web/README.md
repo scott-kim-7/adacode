@@ -32,6 +32,22 @@ Browser → Open WebUI (Docker :3000)
 2. 채팅에서 모델 선택 — Open WebUI가 `GET /v1/models` 목록을 표시합니다. 선택한 모델이 mlx_vlm에 로드됩니다 (`/health` → `loaded_model`).
 3. (필요 시) Settings → Connections → OpenAI base URL 확인
 
+## Ada Email UI (v0.6.42 패치)
+
+Open WebUI에 Ada Email 설정·Inbox 패널·Mail Archive 페이지(`/ada/email`)가 통합됩니다 (`./scripts/vendor-open-webui.sh` → 로컬 Docker build).
+
+1. `cd ada && make vault-init` — vault 마스터 비밀번호 설정 (파일만 생성, env 미사용)
+2. Gmail OAuth: Google Console redirect URI `http://127.0.0.1:8082/oauth/gmail/callback` → `make vault-set KEY=gmail.oauth.client`
+3. `./scripts/ada.sh start` — vault가 있으면 **비밀번호만** 입력 (fd 3으로 Agent에 1회 전달). `ada.local.api_key`는 vault에 자동 생성.
+4. Open WebUI **Admin → Settings → Ada Email** — Local API Key 입력 없음 (admin 세션 → WebUI 프록시 → Agent)
+5. **Email Archive**는 Admin → Ada Email 설정 화면의 **Open email archive** 링크로만 진입 (`/ada/email`). Navbar Inbox 버튼과 별개입니다.
+6. **Inbox UI poll interval**은 채팅 Inbox 패널의 브라우저 폴링 주기이고, **Heartbeat interval**은 Agent 백그라운드 작업(gmail sync, email graph 등) 주기입니다.
+7. Summary Skip Rules에서 no-reply, mailing list, custom rule을 저장하면 해당 메일은 요약 생성을 건너뜁니다.
+
+레거시 `ada/.local/ada_local_api_key`가 있으면: `cd ada && ada vault migrate-local-key`
+
+검증: `./scripts/verify-open-webui-ada.sh`
+
 ## 환경 변수
 
 | 변수 | 기본값 | 설명 |
@@ -41,6 +57,20 @@ Browser → Open WebUI (Docker :3000)
 | `ADA_MLX_MODEL` | *(다운로드 시)* | HF repo id — `download-mlx-model.sh` 전용 |
 | `OPENAI_API_BASE_URL` | `host.docker.internal:8082/v1` | 컨테이너 → LangGraph agent |
 | `ADA_AGENT_PORT` | `8082` | agent API 포트 |
+| `ADA_AGENT_BASE_URL` | `host.docker.internal:8082` | WebUI → Agent Email 프록시 |
+| `ADA_VAULT_UNLOCK_FD` | *(기동 시)* | vault unlock 비밀번호를 읽을 fd (보통 `3`) |
+
+Open WebUI Docker build가 OOM이면 Docker Desktop **Memory ≥ 10GB** 권장. Dockerfile은 `NODE_OPTIONS=--max-old-space-size=8192` 사용.
+
+**`main` 이미지 → v0.6.42 로컬 빌드로 바꾼 경우** 기존 Docker 볼륨의 DB 스키마가 맞지 않을 수 있습니다 (`Can't locate revision b2c3d4e5f6a7`, `tool.access_control` 없음). 해결:
+
+```bash
+ADA_OPEN_WEBUI_RESET_DATA=1 ./scripts/ada.sh start
+# 또는
+./scripts/reset-open-webui-data.sh && ./scripts/serve-open-webui.sh
+```
+
+계정·채팅 기록이 삭제되고 Sign up부터 다시 시작합니다.
 
 Linux에서는 `172.17.0.1` 또는 호스트 IP로 자동 설정됩니다 (`serve-open-webui.sh`).
 
@@ -60,7 +90,8 @@ docker compose -f web/docker-compose.yml down
 | MLX 연결 실패 | `curl http://127.0.0.1:8080/v1/models` 로 LLM 서버 확인 |
 | 응답 매우 느림 | 대형 모델 — 첫 토큰까지 수십 초 가능 |
 | 모델 목록 비어 있음 | Open WebUI Settings에서 base URL / API key `local` 확인 |
-| **이미지 붙여넣기 무시됨** | `./scripts/verify-agent-vision.sh` |
+| **Connect Gmail — Vault not configured** | `curl http://127.0.0.1:8082/health` → `email_vault` 확인. `missing` / `unlock_required`이면 vault-init·vault-set·`ada.sh restart`(vault 비밀번호). |
+| **Email UI Agent unreachable** | `./scripts/vendor-open-webui.sh` 후 WebUI 재빌드. Admin 로그인 필요 (프록시는 admin only). |
 | 이미지 응답 매우 느림 | VL 모델 — 첫 토큰 30~90초 흔함. **새 채팅(+)** 사용 |
 
 ## LangGraph agent

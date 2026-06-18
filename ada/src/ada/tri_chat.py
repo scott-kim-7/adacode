@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 
 from ada.llm import ChatMessage, LLMClient, make_client
 from ada.registry import ModelRegistry, get_profile
+from ada.vault import VaultSession
 
 
 @dataclass
@@ -16,13 +17,13 @@ class TriChatSession:
 	history: list[ChatMessage] = field(default_factory=list)
 	local_label: str = "Local"
 	external_label: str = "External"
-	_vault_password: str | None = field(default=None, repr=False)
+	_vault_session: VaultSession | None = field(default=None, repr=False)
 
 	@classmethod
 	def from_registry(
 		cls,
 		registry: ModelRegistry,
-		vault_password: str | None = None,
+		vault_session: VaultSession | None = None,
 	) -> TriChatSession:
 		local_name = registry.tri_chat.local_profile
 		external_name = registry.tri_chat.external_profile
@@ -30,17 +31,17 @@ class TriChatSession:
 		external = get_profile(registry, external_name)
 		return cls(
 			registry=registry,
-			local_client=make_client(local, vault_password),
+			local_client=make_client(local, vault_session),
 			external_client=None,
 			local_label=local.label,
 			external_label=external.label,
-			_vault_password=vault_password,
+			_vault_session=vault_session,
 		)
 
 	def _external_client(self) -> LLMClient:
 		if self.external_client is None:
 			external = get_profile(self.registry, self.registry.tri_chat.external_profile)
-			self.external_client = make_client(external, self._vault_password)
+			self.external_client = make_client(external, self._vault_session)
 		return self.external_client
 
 	def _system_context(self) -> str:

@@ -5,6 +5,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # shellcheck source=ada/mlx_defaults.sh
 source "$ROOT/scripts/ada/mlx_defaults.sh"
+# shellcheck source=ada/prompt_secrets.sh
+source "$ROOT/scripts/ada/prompt_secrets.sh"
 
 HOST="$(ada_mlx_host)"
 MLX_PORT="$(ada_mlx_port)"
@@ -33,6 +35,10 @@ Environment (optional):
   ADA_MLX_PORT               MLX OpenAI API port (default: 8080)
   ADA_AGENT_PORT             LangGraph OpenAI API port (default: 8082)
   ADA_OPEN_WEBUI_PORT        Browser UI port (default: 3000)
+
+Ada Email / vault (start/restart):
+  Vault password: prompted when ada/vault/secrets.vault.enc exists (passed to Agent via fd 3, not stored).
+  Automation: printf '%s' "$VAULT_PASS" | ADA_NON_INTERACTIVE=1 ADA_VAULT_UNLOCK_FD=3 ./scripts/ada.sh start 3<&0
 
 Examples:
   ./scripts/ada.sh
@@ -123,7 +129,15 @@ webui_up() {
 
 start_agent() {
 	echo "[1/2] LangGraph agent API (:${AGENT_PORT})"
-	"$ROOT/scripts/ensure-ada-agent-server.sh" --force
+	if [[ -n "${_ADA_PROMPT_VAULT_PASSWORD:-}" ]]; then
+		ADA_VAULT_UNLOCK_FD=3 "$ROOT/scripts/ensure-ada-agent-server.sh" --force \
+			3<<<"$_ADA_PROMPT_VAULT_PASSWORD"
+	elif [[ "${ADA_NON_INTERACTIVE:-0}" == "1" && -n "${ADA_VAULT_UNLOCK_FD:-}" ]]; then
+		ADA_VAULT_UNLOCK_FD="${ADA_VAULT_UNLOCK_FD}" "$ROOT/scripts/ensure-ada-agent-server.sh" --force 3<&3
+	else
+		"$ROOT/scripts/ensure-ada-agent-server.sh" --force
+	fi
+	unset _ADA_PROMPT_VAULT_PASSWORD
 }
 
 start_webui() {
@@ -137,6 +151,9 @@ start_webui() {
 
 start_all() {
 	echo "=== Start Ada stack ==="
+	if ! ada_prompt_secrets "$ROOT"; then
+		exit 1
+	fi
 	if ada_mlx_up; then
 		MODEL_ID="$(ada_resolve_openai_model "$(ada_mlx_url)/v1" 2>/dev/null || true)"
 	else
@@ -149,6 +166,7 @@ start_all() {
 	fi
 	start_agent
 	start_webui
+	ada_clear_prompt_secrets
 	ada_sync_model_on_restart || true
 	echo ""
 	echo "Ada stack is running."
@@ -165,6 +183,7 @@ start_all() {
 	fi
 	echo ""
 	echo "Open a NEW chat in the browser (model list from Agent API)."
+	echo "Ada Email: Admin → Settings → Ada Email (API key synced from ada.sh)."
 }
 
 status_line() {

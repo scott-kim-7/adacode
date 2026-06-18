@@ -16,7 +16,7 @@ profiles:
     base_url: https://api.openai.com/v1
     api_key_vault: external.openai.api_key
     tool_calling: false
-    notes: vault 또는 ADA_EXTERNAL_API_KEY. Model id from /v1/models.
+    notes: Model id from /v1/models. API key only in vault (make vault-set KEY=external.openai.api_key).
 
   regression_profile:
     label: Regression (local OpenAPI)

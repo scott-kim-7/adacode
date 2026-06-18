@@ -14,7 +14,13 @@ from ada.openai_stream import (
 	parse_sse_data_line,
 )
 from ada.registry import Profile
-from ada.vault import Vault, VaultError, prompt_password
+from ada.vault import Vault, VaultError, VaultSession
+from ada.vault_secrets import (
+	PUBLIC_API_KEY_TOKENS,
+	assert_profile_secret_policy,
+	resolve_vault_secret,
+	scrub_forbidden_secret_env,
+)
 
 MessageContent = str | list[dict[str, Any]]
 
@@ -157,34 +163,23 @@ class LLMClient:
 		self._client.close()
 
 
-def resolve_api_key(profile: Profile, vault_password: str | None = None) -> str:
+def resolve_api_key(profile: Profile, vault_session: VaultSession | None = None) -> str:
+	scrub_forbidden_secret_env()
+	assert_profile_secret_policy(profile.name, profile.api_key, profile.api_key_vault)
+
 	if profile.api_key:
-		return profile.api_key
+		if profile.api_key in PUBLIC_API_KEY_TOKENS:
+			return profile.api_key
+		raise VaultError(
+			f"Profile '{profile.name}' has disallowed api_key. Use api_key_vault only."
+		)
 
 	if profile.api_key_vault:
-		env_key = profile.api_key_vault.upper().replace(".", "_")
-		from_env = os.environ.get(f"ADA_{env_key}") or os.environ.get("ADA_EXTERNAL_API_KEY")
-		if from_env:
-			return from_env
-
-		vault = Vault()
-		if not vault.exists():
-			raise VaultError(
-				f"Profile '{profile.name}' needs vault key '{profile.api_key_vault}'. "
-				f"Run: cd ada && make vault-init && make vault-set KEY={profile.api_key_vault}"
-			)
-		password = vault_password or prompt_password("VAULT_UNLOCK")
-		value = vault.get(profile.api_key_vault, password)
-		if not value:
-			raise VaultError(
-				f"Vault key '{profile.api_key_vault}' not set. "
-				f"Run: make vault-set KEY={profile.api_key_vault}"
-			)
-		return value
+		return resolve_vault_secret(profile.api_key_vault, vault_session)
 
 	raise VaultError(f"Profile '{profile.name}' has no api_key or api_key_vault")
 
 
-def make_client(profile: Profile, vault_password: str | None = None) -> LLMClient:
-	api_key = resolve_api_key(profile, vault_password)
+def make_client(profile: Profile, vault_session: VaultSession | None = None) -> LLMClient:
+	api_key = resolve_api_key(profile, vault_session)
 	return LLMClient(profile, api_key=api_key)

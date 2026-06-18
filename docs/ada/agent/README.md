@@ -133,3 +133,26 @@ Open WebUI가 보내는 `content: [{type:text}, {type:image_url}]` 형식을 age
 | EvalGraph | 미구현 (회귀 golden) |
 
 MainGraph의 `route`는 현재 키워드 휴리스틱이며, 이후 LLM 분류 또는 registry 프로필별 정책으로 교체할 수 있습니다.
+
+## Gmail 이메일 대화 API (신규)
+
+Main agent 서버(`:8082`)에 이메일 커넥터 API가 함께 노출됩니다.
+
+### 엔드포인트
+
+- `POST /ingest/gmail/webhook` — Gmail 수신 메시지 적재(idempotent)
+- `POST /process/message/{gmail_message_id}` — 정책 평가 (Ada 호명 + 회신 요청)
+- `GET /ops/email/actions?status=pending_review` — 리뷰 대기 목록
+- `POST /ops/email/actions/{id}/approve-send` — 승인 후 발송
+- `POST /agent/email/draft` — 스레드 컨텍스트 기반 회신 초안 생성
+
+### 정책 요약
+
+- 자동 회신 트리거: **Ada 호명 + 회신 요청 의도** 동시 만족
+- 차단 규칙: `noreply`, 자동응답 헤더(`Auto-Submitted`), 메일링리스트(`List-Id`)
+- 처리 결과는 `email_actions`, `email_audit_logs`에 기록
+
+### 저장소
+
+- 기본 DB: `ada/data/email_connector.sqlite3`
+- 환경변수로 변경: `ADA_EMAIL_DB_PATH=/path/to/email.sqlite3`

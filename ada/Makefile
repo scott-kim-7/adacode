@@ -1,4 +1,4 @@
-.PHONY: vault-init vault-set vault-list profiles tri-chat test install
+.PHONY: vault-init vault-set vault-set-auto vault-ensure vault-list profiles tri-chat test install
 
 VENV := .venv
 PYTHON := $(VENV)/bin/python
@@ -14,6 +14,10 @@ vault-init:
 vault-set:
 	@test -n "$(KEY)" || (echo "Usage: make vault-set KEY=external.openai.api_key" >&2; exit 1)
 	$(PYTHON) -m ada vault set $(KEY)
+
+vault-set-auto vault-ensure:
+	@test -n "$(KEY)" || (echo "Usage: make vault-ensure KEY=webhook.shared_secret" >&2; exit 1)
+	$(PYTHON) -m ada vault ensure $(KEY) $(if $(SHOW),--show,) $(if $(FORCE),--force,) $(if $(BYTES),--bytes $(BYTES),)
 
 vault-list:
 	$(PYTHON) -m ada vault list

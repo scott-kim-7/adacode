@@ -1,6 +1,9 @@
 services:
   open-webui:
-    image: ghcr.io/open-webui/open-webui:main
+    build:
+      context: ./open-webui
+      args:
+        PUBLIC_ADA_AGENT_BASE_URL: ${ADA_AGENT_BASE_URL:-http://host.docker.internal:8082}
     container_name: ${ADA_OPEN_WEBUI_CONTAINER:-adacode-open-webui}
     ports:
       - "${ADA_OPEN_WEBUI_PORT:-3000}:8080"
@@ -23,6 +26,7 @@ services:
       ENABLE_OLLAMA_API: "false"
       # Keep login sessions across container recreate/restart (empty = new key each time → 401 toast)
       WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY:-adacode-local-webui-secret}
+      ADA_AGENT_BASE_URL: ${ADA_AGENT_BASE_URL:-http://host.docker.internal:8082}
     volumes:
       - open-webui:/app/backend/data
     extra_hosts:

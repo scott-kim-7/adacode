@@ -9,6 +9,7 @@ source "$ROOT/scripts/ada/mlx_defaults.sh"
 MLX_HOST="${ADA_MLX_HOST:-127.0.0.1}"
 MLX_PORT="${ADA_MLX_PORT:-8080}"
 AGENT_PORT="${ADA_AGENT_PORT:-8082}"
+WEBUI_PORT="${ADA_OPEN_WEBUI_PORT:-3000}"
 PID_FILE="${ADA_AGENT_PID:-$ROOT/.ada-agent-server.pid}"
 LOG="${ADA_AGENT_LOG:-$ROOT/.ada-agent-server.log}"
 VENV="$ROOT/ada/.venv"
@@ -109,14 +110,20 @@ source "$VENV/bin/activate"
 export PYTHONPATH="$ROOT/ada/src${PYTHONPATH:+:$PYTHONPATH}"
 pip install -q httpx "fastapi>=0.115" "uvicorn>=0.32"
 
-export MLX_UPSTREAM="http://${MLX_HOST}:${MLX_PORT}"
-export ADA_AGENT_HOST="$MLX_HOST"
-export ADA_AGENT_PORT="$AGENT_PORT"
-export ADA_MODEL_REGISTRY="${ADA_MODEL_REGISTRY:-$ROOT/ada/config/model_registry.yaml}"
-# Live SSE by default (plan thinking + respond). Set ADA_AGENT_FORCE_NON_STREAM=1 for buffered JSON (Open WebUI 0.8 fallback).
-export ADA_AGENT_FORCE_NON_STREAM="${ADA_AGENT_FORCE_NON_STREAM:-0}"
+# Agent env (secrets passed only to the python process, then unset in this shell).
+_agent_env=(
+	"MLX_UPSTREAM=http://${MLX_HOST}:${MLX_PORT}"
+	"ADA_AGENT_HOST=${MLX_HOST}"
+	"ADA_AGENT_PORT=${AGENT_PORT}"
+	"ADA_MODEL_REGISTRY=${ADA_MODEL_REGISTRY:-$ROOT/ada/config/model_registry.yaml}"
+	"ADA_AGENT_FORCE_NON_STREAM=${ADA_AGENT_FORCE_NON_STREAM:-0}"
+	"PYTHONPATH=$ROOT/ada/src${PYTHONPATH:+:$PYTHONPATH}"
+)
+[[ -n "${ADA_VAULT_UNLOCK_FD:-}" ]] && _agent_env+=("ADA_VAULT_UNLOCK_FD=${ADA_VAULT_UNLOCK_FD}")
+_agent_env+=("ADA_CORS_ORIGINS=http://localhost:${WEBUI_PORT},http://127.0.0.1:${WEBUI_PORT}")
 
-nohup python "$SERVER_SCRIPT" >>"$LOG" 2>&1 &
+nohup env "${_agent_env[@]}" python "$SERVER_SCRIPT" >>"$LOG" 2>&1 &
+unset _agent_env ADA_VAULT_UNLOCK_FD
 echo $! >"$PID_FILE"
 echo "  Waiting for agent /health ..."
 

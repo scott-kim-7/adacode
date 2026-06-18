@@ -31,13 +31,7 @@ make vault-set KEY=external.openai.api_key
 make vault-list
 ```
 
-정책: [VAULT.md](../VAULT.md) — 평문 settings·`.env` 금지.
-
-개발용 우회 (vault 없이 테스트):
-
-```bash
-export ADA_EXTERNAL_API_KEY=sk-...
-```
+정책: [VAULT.md](../VAULT.md) — 평문 settings·`.env`·`ADA_*_KEY` env 금지. 외부 API 키는 vault만 사용.
 
 ## 3. Model Registry
 
@@ -73,7 +67,7 @@ Step 1 JSON에 **두 번째 Custom Endpoint** 그룹을 추가합니다.
 
 # 터미널 2
 cd ada && source .venv/bin/activate
-export ADA_EXTERNAL_API_KEY=sk-...   # 또는 vault
+make vault-set KEY=external.openai.api_key   # vault unlock 후 입력
 ada tri-chat
 ```
 

@@ -36,6 +36,53 @@ def _derive_key(password: str, salt: bytes) -> bytes:
 	return kdf.derive(_normalize_password(password))
 
 
+def _normalize_password_bytes(password: bytes | bytearray) -> bytes:
+	text = bytes(password).decode("utf-8")
+	return _normalize_password(text)
+
+
+def _derive_key_bytes(password: bytes | bytearray, salt: bytes) -> bytes:
+	kdf = PBKDF2HMAC(
+		algorithm=hashes.SHA256(),
+		length=32,
+		salt=salt,
+		iterations=PBKDF2_ITERATIONS,
+	)
+	return kdf.derive(_normalize_password_bytes(password))
+
+
+def secure_zero(buf: bytearray) -> None:
+	for i in range(len(buf)):
+		buf[i] = 0
+
+
+def _parse_envelope(blob: bytes) -> tuple[bytes, bytes, bytes]:
+	envelope = json.loads(blob.decode("utf-8"))
+	salt = base64.b64decode(envelope["salt"])
+	nonce = base64.b64decode(envelope["nonce"])
+	ciphertext = base64.b64decode(envelope["ciphertext"])
+	return salt, nonce, ciphertext
+
+
+def _decrypt_with_key(nonce: bytes, ciphertext: bytes, key: bytes) -> dict[str, str]:
+	plaintext = AESGCM(key).decrypt(nonce, ciphertext, None)
+	data = json.loads(plaintext.decode("utf-8"))
+	return {str(k): str(v) for k, v in data.items()}
+
+
+def _encrypt_with_key(secrets: dict[str, str], salt: bytes, key: bytes) -> bytes:
+	nonce = os.urandom(NONCE_BYTES)
+	plaintext = json.dumps(secrets, ensure_ascii=False, sort_keys=True).encode("utf-8")
+	ciphertext = AESGCM(key).encrypt(nonce, plaintext, None)
+	envelope = {
+		"version": VAULT_VERSION,
+		"salt": base64.b64encode(salt).decode("ascii"),
+		"nonce": base64.b64encode(nonce).decode("ascii"),
+		"ciphertext": base64.b64encode(ciphertext).decode("ascii"),
+	}
+	return json.dumps(envelope, indent=2).encode("utf-8")
+
+
 def _encrypt_payload(secrets: dict[str, str], password: str) -> bytes:
 	salt = os.urandom(SALT_BYTES)
 	key = _derive_key(password, salt)
@@ -95,6 +142,67 @@ class Vault:
 
 	def get(self, key: str, password: str) -> str | None:
 		return self.unlock(password).get(key)
+
+
+class VaultSession:
+	"""Unlocked vault: derived key + secrets in memory; password not retained."""
+
+	def __init__(
+		self,
+		vault: Vault,
+		*,
+		derived_key: bytearray,
+		salt: bytes,
+		secrets: dict[str, str],
+	) -> None:
+		self._vault = vault
+		self._derived_key = derived_key
+		self._salt = salt
+		self._secrets = dict(secrets)
+
+	@classmethod
+	def unlock_from_password(cls, vault: Vault, password: str) -> VaultSession:
+		pw = bytearray(password.encode("utf-8"))
+		try:
+			return cls.unlock_from_password_bytes(vault, pw)
+		finally:
+			secure_zero(pw)
+
+	@classmethod
+	def unlock_from_password_bytes(cls, vault: Vault, password: bytearray) -> VaultSession:
+		if not vault.exists():
+			raise VaultError(f"Vault not found: {vault.path}. Run: make vault-init")
+		blob = vault.path.read_bytes()
+		try:
+			salt, nonce, ciphertext = _parse_envelope(blob)
+			key = bytearray(_derive_key_bytes(password, salt))
+			secrets = _decrypt_with_key(nonce, ciphertext, bytes(key))
+		except VaultError:
+			raise
+		except Exception as exc:
+			raise VaultError("Vault unlock failed (wrong password or corrupt file)") from exc
+		return cls(vault=vault, derived_key=key, salt=salt, secrets=secrets)
+
+	@property
+	def is_unlocked(self) -> bool:
+		return bool(self._derived_key)
+
+	def get(self, key: str) -> str | None:
+		return self._secrets.get(key)
+
+	def set(self, key: str, value: str) -> None:
+		self._secrets[key] = value
+
+	def delete(self, key: str) -> None:
+		self._secrets.pop(key, None)
+
+	def save(self) -> None:
+		self._vault.path.parent.mkdir(parents=True, exist_ok=True)
+		payload = _encrypt_with_key(self._secrets, self._salt, bytes(self._derived_key))
+		self._vault.path.write_bytes(payload)
+
+	def __repr__(self) -> str:
+		return f"VaultSession(unlocked={self.is_unlocked}, keys={len(self._secrets)})"
 
 
 def prompt_password(action: str) -> str:

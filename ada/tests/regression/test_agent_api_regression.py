@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from unittest.mock import patch
 
 import httpx
@@ -57,6 +58,7 @@ def test_regression_stream_true_returns_sse_by_default():
 		return "tok"
 
 	with (
+		patch.dict(os.environ, {"ADA_AGENT_FORCE_NON_STREAM": "0"}, clear=False),
 		patch("ada.agent.server.effective_model_id", return_value="test-model"),
 		patch("ada.agent.server.run_chat_completion_streaming", side_effect=fake_streaming),
 	):

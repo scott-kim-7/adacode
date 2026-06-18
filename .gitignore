@@ -27,6 +27,10 @@ ada/src/ada/eval/reports/*-latest.md
 .ada-agent-server.pid
 .claude/
 .cache
-Thumbs.db
+ada/data/email_connector.sqlite3
+ada/data/email_raw/
+ada/data/email_attachments/
+ada/.local/
+web/open-webui/
 node_modules/
 *.egg-info/

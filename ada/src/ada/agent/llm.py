@@ -10,6 +10,7 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, System
 from ada.agent.stream_sink import StreamContext
 from ada.llm import ChatCompletionResult, ChatMessage, LLMClient, MessageContent, make_client
 from ada.registry import Profile, get_profile, load_registry
+from ada.vault import VaultSession
 
 
 def _to_message_content(message: BaseMessage) -> MessageContent:
@@ -33,12 +34,12 @@ def _to_chat_messages(messages: list[BaseMessage]) -> list[ChatMessage]:
 
 def make_llm_callable(
 	profile: Profile,
-	vault_password: str | None = None,
+	vault_session: VaultSession | None = None,
 	client_factory: Callable[[Profile], LLMClient] | None = None,
 	stream_context: StreamContext | None = None,
 ) -> Callable[[list[BaseMessage]], str]:
 	if client_factory is None:
-		client_factory = lambda p: make_client(p, vault_password=vault_password)
+		client_factory = lambda p: make_client(p, vault_session=vault_session)
 	client = client_factory(profile)
 
 	def call_llm(messages: list[BaseMessage]) -> str:
@@ -65,11 +66,11 @@ def make_llm_callable(
 
 def make_tool_llm_callable(
 	profile: Profile,
-	vault_password: str | None = None,
+	vault_session: VaultSession | None = None,
 	client_factory: Callable[[Profile], LLMClient] | None = None,
 ) -> Callable[[list[ChatMessage], list[dict[str, Any]] | None], ChatCompletionResult]:
 	if client_factory is None:
-		client_factory = lambda p: make_client(p, vault_password=vault_password)
+		client_factory = lambda p: make_client(p, vault_session=vault_session)
 	client = client_factory(profile)
 
 	def call_with_tools(

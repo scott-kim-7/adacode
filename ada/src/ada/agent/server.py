@@ -3,10 +3,12 @@ from __future__ import annotations
 import asyncio
 import os
 import time
+from contextlib import asynccontextmanager
 from typing import Any
 
 import httpx
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 
 from ada.agent.config import load_agent_config
@@ -20,30 +22,77 @@ from ada.agent.openai_compat import (
 	run_tool_chat_completion,
 )
 from ada.agent.stream_sink import StreamSink
+from ada.email.api import build_email_router
+from ada.email.platform import EmailPlatform
+from ada.heartbeat.runner import HeartbeatLifecycle
 from ada.openai_models import (
 	NoLoadedModelError,
 	effective_model_id,
 	loaded_model_from_health,
 	resolve_model_id,
 )
+from ada.vault import VaultError
 
 HOST = os.environ.get("ADA_AGENT_HOST", "127.0.0.1")
 PORT = int(os.environ.get("ADA_AGENT_PORT", "8082"))
 MLX_UPSTREAM = os.environ.get("MLX_UPSTREAM", "http://127.0.0.1:8080").rstrip("/")
-FORCE_NON_STREAM = os.environ.get("ADA_AGENT_FORCE_NON_STREAM", "0") != "0"
+FORCE_NON_STREAM = False
+CORS_ORIGINS = [
+	origin.strip()
+	for origin in os.environ.get(
+		"ADA_CORS_ORIGINS",
+		"http://localhost:3000,http://127.0.0.1:3000",
+	).split(",")
+	if origin.strip()
+]
 
 
-def create_app() -> FastAPI:
+def create_app(email_platform: EmailPlatform | None = None) -> FastAPI:
 	cfg = load_agent_config()
 	profile = load_profile_from_env()
 	llm_callable = make_llm_callable(profile)
 	tool_llm_callable = make_tool_llm_callable(profile)
+	if email_platform is not None:
+		platform = email_platform
+	else:
+		try:
+			platform = EmailPlatform.from_env()
+		except VaultError:
+			# Test/runtime fallback: keep email features available without forcing vault unlock.
+			platform = EmailPlatform.from_session(None)
+	heartbeat_cm = HeartbeatLifecycle(platform.heartbeat)
 
-	app = FastAPI(title="Ada LangGraph Agent", version="0.1.0")
+	@asynccontextmanager
+	async def lifespan(app: FastAPI):
+		heartbeat_cm.__enter__()
+		yield
+		heartbeat_cm.__exit__(None, None, None)
+
+	app = FastAPI(title="Ada LangGraph Agent", version="0.1.0", lifespan=lifespan)
+	if CORS_ORIGINS:
+		app.add_middleware(
+			CORSMiddleware,
+			allow_origins=CORS_ORIGINS,
+			allow_credentials=True,
+			allow_methods=["*"],
+			allow_headers=["*"],
+		)
+	app.include_router(build_email_router(platform))
 
 	@app.get("/health")
 	async def health() -> dict[str, str]:
 		payload: dict[str, str] = {"status": "ok", "endpoint": MLX_UPSTREAM}
+		readiness = platform.vault_tokens.oauth_readiness()
+		if readiness.ready:
+			payload["email_vault"] = "ready"
+		elif not readiness.vault_file:
+			payload["email_vault"] = "missing"
+		elif not readiness.vault_unlocked:
+			payload["email_vault"] = "unlock_required"
+		elif not readiness.gmail_client:
+			payload["email_vault"] = "client_credentials_required"
+		else:
+			payload["email_vault"] = "locked"
 		try:
 			timeout = httpx.Timeout(5.0, connect=2.0)
 			async with httpx.AsyncClient(timeout=timeout) as client:
@@ -114,7 +163,8 @@ def create_app() -> FastAPI:
 		except NoLoadedModelError as exc:
 			raise HTTPException(status_code=400, detail=str(exc)) from exc
 		stream_requested = bool(payload.get("stream"))
-		if stream_requested and FORCE_NON_STREAM:
+		force_non_stream = FORCE_NON_STREAM or (os.environ.get("ADA_AGENT_FORCE_NON_STREAM", "0") != "0")
+		if stream_requested and force_non_stream:
 			stream_requested = False
 
 		tools = payload.get("tools")
@@ -205,13 +255,26 @@ def main() -> int:
 			flush=True,
 		)
 
-	app = create_app()
+	from ada.email.auth import configure_local_api_key
+	from ada.vault_secrets import scrub_forbidden_secret_env
+	from ada.vault_unlock import bootstrap_vault_session, ensure_local_api_key
+
+	scrub_forbidden_secret_env()
+	session = bootstrap_vault_session()
+	if session is not None:
+		configure_local_api_key(ensure_local_api_key(session))
+	else:
+		configure_local_api_key(None)
+
+	platform = EmailPlatform.from_session(session)
+	app = create_app(email_platform=platform)
 	print(f"Ada LangGraph agent server", flush=True)
 	print(f"  listen: http://{HOST}:{PORT}/v1", flush=True)
 	print(f"  mlx:    {MLX_UPSTREAM}", flush=True)
 	print(f"  models: GET {MLX_UPSTREAM}/v1/models (OpenAPI)", flush=True)
+	force_non_stream = FORCE_NON_STREAM or (os.environ.get("ADA_AGENT_FORCE_NON_STREAM", "0") != "0")
 	print(
-		f"  mode:   {'buffered JSON (set ADA_AGENT_FORCE_NON_STREAM=1)' if FORCE_NON_STREAM else 'SSE stream (plan thinking + respond)'}",
+		f"  mode:   {'buffered JSON (set ADA_AGENT_FORCE_NON_STREAM=1)' if force_non_stream else 'SSE stream (plan thinking + respond)'}",
 		flush=True,
 	)
 	uvicorn.run(app, host=HOST, port=PORT, log_level="warning")
