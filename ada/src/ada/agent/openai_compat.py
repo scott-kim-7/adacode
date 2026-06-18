@@ -143,7 +143,26 @@ async def iter_sse_chat_completion(
 		while True:
 			item = await loop.run_in_executor(None, sink.get)
 			if isinstance(item, BaseException):
-				raise item
+				message = str(item) or item.__class__.__name__
+				yield _sse_line(
+					build_chat_completion_chunk(
+						model,
+						completion_id,
+						created,
+						delta={"content": f"\n\n[error] {message}\n"},
+					)
+				)
+				yield _sse_line(
+					build_chat_completion_chunk(
+						model,
+						completion_id,
+						created,
+						delta={},
+						finish_reason="stop",
+					)
+				)
+				yield "data: [DONE]\n\n"
+				break
 			if item is None:
 				if include_usage:
 					yield _sse_line(

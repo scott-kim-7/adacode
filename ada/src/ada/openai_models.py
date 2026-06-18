@@ -35,6 +35,31 @@ def health_url(base_url: str) -> str:
 	return f"{mlx_upstream_base(base_url)}/health"
 
 
+def parse_health_model(data: dict[str, object]) -> str | None:
+	"""Read model id from MLX /health (loaded_model, model_id) or LiteLLM healthy_endpoints."""
+	for key in ("loaded_model", "model_id"):
+		raw = data.get(key)
+		if not isinstance(raw, str) or not raw.strip():
+			continue
+		first = raw.split(",")[0].strip()
+		if first:
+			return first
+
+	endpoints = data.get("healthy_endpoints")
+	if isinstance(endpoints, list):
+		for item in endpoints:
+			if not isinstance(item, dict):
+				continue
+			model = item.get("model")
+			if isinstance(model, str) and model.strip():
+				return model.strip()
+	return None
+
+
+def is_litellm_health(data: dict[str, object]) -> bool:
+	return isinstance(data.get("healthy_endpoints"), list)
+
+
 def loaded_model_from_health(
 	base_url: str,
 	*,
@@ -52,10 +77,17 @@ def loaded_model_from_health(
 		return None
 	if not isinstance(data, dict):
 		return None
-	loaded = data.get("loaded_model")
-	if loaded:
-		return str(loaded)
-	return None
+	parsed = parse_health_model(data)
+	if parsed and not is_litellm_health(data):
+		return parsed
+	# LiteLLM (and other OpenAI gateways): prefer /v1/models alias (e.g. mlx-vision).
+	try:
+		ids = list_model_ids(base_url, api_key=api_key, timeout=timeout)
+		if ids:
+			return ids[0]
+	except RuntimeError:
+		pass
+	return parsed
 
 
 def list_model_ids(
@@ -104,10 +136,17 @@ def effective_model_id(
 	req = (requested or "").strip()
 	if req:
 		return req
+	try:
+		ids = list_model_ids(base_url, api_key=api_key, timeout=timeout)
+		if ids:
+			return ids[0]
+	except RuntimeError:
+		pass
 	health = health_url(base_url)
 	raise NoLoadedModelError(
-		f"No model loaded on LLM server ({health} → loaded_model is null). "
-		"Start mlx_vlm with --model …, or pick a model in the chat UI."
+		f"No model available on LLM server ({health} — mlx_vlm loaded_model/model_id, "
+		"LiteLLM healthy_endpoints, or GET /v1/models). "
+		"Start mlx_vlm/LiteLLM or pick a model in the chat UI."
 	)
 
 

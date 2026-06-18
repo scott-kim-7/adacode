@@ -5,7 +5,7 @@ profiles:
   chat_profile:
     label: Local LLM (OpenAPI)
     provider: openai-compatible
-    base_url: http://127.0.0.1:8080/v1
+    base_url: http://127.0.0.1:8089/v1
     api_key: local
     tool_calling: true
     notes: Model id resolved at runtime via /v1/models on base_url.
@@ -21,7 +21,7 @@ profiles:
   regression_profile:
     label: Regression (local OpenAPI)
     provider: openai-compatible
-    base_url: http://127.0.0.1:8080/v1
+    base_url: http://127.0.0.1:8089/v1
     api_key: local
     tool_calling: true
     notes: Same endpoint as chat_profile; model resolved via OpenAPI.

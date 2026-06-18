@@ -8,7 +8,7 @@ source "$ROOT/scripts/ada/mlx_defaults.sh"
 
 HOST="${ADA_AGENT_HOST:-127.0.0.1}"
 AGENT_PORT="${ADA_AGENT_PORT:-9082}"
-MLX_PORT="${ADA_MLX_PORT:-8080}"
+MLX_PORT="${ADA_MLX_PORT:-8089}"
 
 echo "=== Verify agent vision (:${AGENT_PORT}) ==="
 

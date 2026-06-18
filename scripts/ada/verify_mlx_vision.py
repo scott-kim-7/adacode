@@ -16,7 +16,7 @@ TINY_PNG_B64 = (
 
 def main() -> int:
 	host = os.environ.get("ADA_MLX_HOST", "127.0.0.1")
-	port = os.environ.get("ADA_MLX_PORT", "8080")
+	port = os.environ.get("ADA_MLX_PORT", "8089")
 	base = f"http://{host}:{port}/v1"
 
 	sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parents[2] / "ada" / "src"))
@@ -56,7 +56,7 @@ def main() -> int:
 		text = exc.read().decode("utf-8", errors="replace")
 		if "Only 'text' content type is supported" in text:
 			print(
-				"RESULT: mlx_lm text-only server detected — use a vision-capable mlx-vlm server on :8080",
+				f"RESULT: mlx_lm text-only server detected — use a vision-capable mlx-vlm server on :{port}",
 				file=sys.stderr,
 			)
 			return 2

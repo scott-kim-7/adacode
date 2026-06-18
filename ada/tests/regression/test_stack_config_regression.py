@@ -29,7 +29,7 @@ def test_regression_model_registry_chat_profile_openapi():
 	reg = load_registry()
 	profile = get_profile(reg, "chat_profile")
 	assert profile.base_url.endswith("/v1")
-	assert "127.0.0.1:8080" in profile.base_url
+	assert "127.0.0.1:8089" in profile.base_url
 
 
 def test_regression_docker_compose_points_to_agent_api():

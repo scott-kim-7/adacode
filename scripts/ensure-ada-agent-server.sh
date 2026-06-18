@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Start Ada LangGraph agent API (9082) if MLX (8080) is up.
+# Start Ada LangGraph agent API (9082) if MLX (8089) is up.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -7,7 +7,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 source "$ROOT/scripts/ada/mlx_defaults.sh"
 
 MLX_HOST="${ADA_MLX_HOST:-127.0.0.1}"
-MLX_PORT="${ADA_MLX_PORT:-8080}"
+MLX_PORT="${ADA_MLX_PORT:-8089}"
 AGENT_PORT="${ADA_AGENT_PORT:-9082}"
 WEBUI_PORT="${ADA_OPEN_WEBUI_PORT:-3000}"
 PID_FILE="${ADA_AGENT_PID:-$ROOT/.ada-agent-server.pid}"

@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from ada.email.attachment_store import AttachmentStore
-from ada.email.gmail_client import GmailApiClient, is_history_id_expired, seed_history_id
+from ada.email.gmail_client import GmailApiClient, is_history_id_expired, is_message_not_found, seed_history_id
 from ada.email.gmail_parse import parse_gmail_message
 from ada.email.service import EmailConversationService, GmailAttachment, IngestedMessage
 from ada.email.store import EmailStore
@@ -57,6 +57,7 @@ class GmailSyncService:
 			raise
 
 		processed = 0
+		skipped_deleted = 0
 		for record in changes.get("history") or []:
 			for added in record.get("messagesAdded") or []:
 				msg_ref = added.get("message") or {}
@@ -65,13 +66,22 @@ class GmailSyncService:
 					continue
 				if self._store.get_message(msg_id):
 					continue
-				self._ingest_gmail_message(account_id, str(account.get("email_address") or ""), client, msg_id)
-				processed += 1
+				if self._ingest_gmail_message(
+					account_id, str(account.get("email_address") or ""), client, msg_id
+				):
+					processed += 1
+				else:
+					skipped_deleted += 1
 
 		new_history = str(changes.get("historyId") or history_id)
 		self._store.set_account_history_id(account_id, new_history)
 		self.maybe_enqueue_backfill_if_empty(account_id)
-		return {"account_id": account_id, "processed": processed, "history_id": new_history}
+		return {
+			"account_id": account_id,
+			"processed": processed,
+			"skipped_deleted": skipped_deleted,
+			"history_id": new_history,
+		}
 
 	def maybe_enqueue_backfill_if_empty(self, account_id: str) -> None:
 		if self._store.count_messages({"account_id": account_id}) > 0:
@@ -115,13 +125,22 @@ class GmailSyncService:
 		account_email = str(account.get("email_address") or "")
 		backfilled = 0
 		skipped = 0
+		skipped_deleted = 0
 		for message_id in client.list_recent_message_ids(max_results=limit):
 			if self._store.get_message(message_id):
 				skipped += 1
 				continue
-			self._ingest_gmail_message(account_id, account_email, client, message_id)
-			backfilled += 1
-		return {"account_id": account_id, "backfilled": backfilled, "skipped": skipped, "limit": limit}
+			if self._ingest_gmail_message(account_id, account_email, client, message_id):
+				backfilled += 1
+			else:
+				skipped_deleted += 1
+		return {
+			"account_id": account_id,
+			"backfilled": backfilled,
+			"skipped": skipped,
+			"skipped_deleted": skipped_deleted,
+			"limit": limit,
+		}
 
 	def _ingest_gmail_message(
 		self,
@@ -129,20 +148,35 @@ class GmailSyncService:
 		account_email: str,
 		client: GmailApiClient,
 		message_id: str,
-	) -> None:
-		raw_bytes = client.get_raw_message(message_id)
+	) -> bool:
+		try:
+			raw_bytes = client.get_raw_message(message_id)
+		except Exception as exc:
+			if is_message_not_found(exc):
+				return False
+			raise
 		eml_path = self._attachment_store.save_eml(
 			account_id=account_id,
 			message_id=message_id,
 			raw_bytes=raw_bytes,
 		)
-		full = client.get_message(message_id, fmt="full")
+		try:
+			full = client.get_message(message_id, fmt="full")
+		except Exception as exc:
+			if is_message_not_found(exc):
+				return False
+			raise
 		parsed = parse_gmail_message(full)
 		settings = self._store.get_email_settings()
 		max_bytes = settings.get("attachment_max_bytes")
 		attachments: list[GmailAttachment] = []
 		for item in parsed.get("attachments") or []:
-			data = client.get_attachment(message_id, str(item["attachment_id"]))
+			try:
+				data = client.get_attachment(message_id, str(item["attachment_id"]))
+			except Exception as exc:
+				if is_message_not_found(exc):
+					return False
+				raise
 			saved = self._attachment_store.save_attachment(
 				account_id=account_id,
 				message_id=message_id,
@@ -186,6 +220,7 @@ class GmailSyncService:
 			)
 			if self._defer_reply_review:
 				self._defer_reply_review(message_id)
+		return True
 
 	def enqueue_reply_review(self, message_id: str) -> None:
 		self._store.enqueue_deferred_task(

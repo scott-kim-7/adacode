@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 
 DEFAULT_AGENT_PORT = 9082
-DEFAULT_MLX_PORT = 8080
+DEFAULT_MLX_PORT = 8089
 DEFAULT_MLX_PROXY_PORT = 9081
 MLX_RESERVED_PORT_MIN = 8080
 MLX_RESERVED_PORT_MAX = 8090
@@ -35,6 +35,17 @@ def agent_port() -> int:
 
 def mlx_port() -> int:
 	return _env_int("ADA_MLX_PORT", DEFAULT_MLX_PORT)
+
+
+def mlx_host() -> str:
+	return os.environ.get("ADA_MLX_HOST", "127.0.0.1").strip() or "127.0.0.1"
+
+
+def mlx_upstream_url() -> str:
+	override = os.environ.get("MLX_UPSTREAM", "").strip().rstrip("/")
+	if override:
+		return override
+	return f"http://{mlx_host()}:{mlx_port()}"
 
 
 def mlx_proxy_port() -> int:

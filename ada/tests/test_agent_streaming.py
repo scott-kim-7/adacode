@@ -270,6 +270,36 @@ def test_stream_true_returns_sse_by_default():
 			assert "[DONE]" in body
 
 
+def test_stream_error_finishes_sse_with_done():
+	def fake_streaming(messages, llm_callable, stream_sink, config=None, stream_context=None):
+		stream_sink.push("partial")
+		stream_sink.finish(error=RuntimeError("LLM failed"))
+		raise RuntimeError("LLM failed")
+
+	app = create_app()
+	with (
+		patch("ada.agent.server.FORCE_NON_STREAM", False),
+		patch("ada.agent.server.effective_model_id", return_value="test-model"),
+		patch("ada.agent.server.run_chat_completion_streaming", side_effect=fake_streaming),
+	):
+		client = TestClient(app)
+		with client.stream(
+			"POST",
+			"/v1/chat/completions",
+			json={
+				"model": "test",
+				"messages": [{"role": "user", "content": "ping"}],
+				"stream": True,
+			},
+		) as resp:
+			assert resp.status_code == 200
+			body = "".join(resp.iter_text())
+			assert "partial" in body
+			assert "[error] LLM failed" in body
+			assert '"finish_reason":"stop"' in body.replace(" ", "")
+			assert "[DONE]" in body
+
+
 def test_stream_true_buffered_when_force_non_stream_enabled():
 	def fake_run(_messages, _llm, config=None, stream_context=None):
 		return "buffered"

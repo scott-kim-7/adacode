@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Ada web stack: stop / start / restart Agent + Open WebUI (MLX :8080 must already be running).
+# Ada web stack: stop / start / restart Agent + Open WebUI (MLX :8089 must already be running).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -32,7 +32,7 @@ Prerequisite:
   — verified via /health or /v1/models (waits up to ${ADA_MLX_WAIT_SEC:-30}s)
 
 Environment (optional):
-  ADA_MLX_PORT               MLX OpenAI API port (default: 8080)
+  ADA_MLX_PORT               MLX OpenAI API port (default: 8089)
   ADA_AGENT_PORT             LangGraph OpenAI API port (default: 9082)
   ADA_OPEN_WEBUI_PORT        Browser UI port (default: 3000)
 

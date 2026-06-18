@@ -6,6 +6,7 @@ from typing import Any
 import httpx
 
 from ada.eval.harness.config import eval_base_url, load_eval_config
+from ada.ports import mlx_port, mlx_upstream_url
 from ada.registry import get_profile, load_registry
 
 
@@ -44,7 +45,7 @@ def _probe_url(client: httpx.Client, url: str) -> bool:
 
 def is_mlx_upstream_reachable(timeout: float = 2.0) -> bool:
 	"""Check MLX_UPSTREAM (agent server → MLX), not registry profile alone."""
-	upstream = os.environ.get("MLX_UPSTREAM", "http://127.0.0.1:8080").rstrip("/")
+	upstream = mlx_upstream_url()
 	try:
 		with httpx.Client(timeout=timeout) as client:
 			return any(_probe_url(client, url) for url in _mlx_probe_urls(upstream))
@@ -76,10 +77,10 @@ def stack_status() -> dict[str, Any]:
 
 def require_mlx_reachable(*, timeout: float = 2.0) -> None:
 	if not is_mlx_reachable(timeout=timeout):
-		upstream = os.environ.get("MLX_UPSTREAM", "http://127.0.0.1:8080").rstrip("/")
+		upstream = mlx_upstream_url()
 		raise SystemExit(
 			f"LLM server is not reachable at {upstream} (/health or /v1/models) "
-			"— start mlx_vlm.server on :8080 before continuing."
+			f"— start mlx_vlm.server on :{mlx_port()} before continuing."
 		)
 
 

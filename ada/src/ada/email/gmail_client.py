@@ -174,13 +174,21 @@ def seed_history_id(client: GmailApiClient) -> str:
 	return str(profile.get("historyId") or "")
 
 
-def is_history_id_expired(exc: Exception) -> bool:
+def _is_gmail_http_not_found(exc: Exception) -> bool:
 	if isinstance(exc, HttpError):
 		try:
 			return int(exc.resp.status) == 404
 		except Exception:
 			return False
 	return False
+
+
+def is_history_id_expired(exc: Exception) -> bool:
+	return _is_gmail_http_not_found(exc)
+
+
+def is_message_not_found(exc: Exception) -> bool:
+	return _is_gmail_http_not_found(exc)
 
 
 def oauth_client_config(vault: GmailVaultTokens) -> dict[str, Any]:

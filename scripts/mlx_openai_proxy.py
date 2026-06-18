@@ -11,7 +11,9 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from collections.abc import AsyncIterator
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -19,7 +21,11 @@ import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.responses import Response, StreamingResponse
 
-UPSTREAM = os.environ.get("MLX_UPSTREAM", "http://127.0.0.1:8080").rstrip("/")
+_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(_ROOT / "ada" / "src"))
+from ada.ports import mlx_upstream_url
+
+UPSTREAM = mlx_upstream_url()
 HOST = os.environ.get("ADA_MLX_PROXY_HOST", "127.0.0.1")
 PORT = int(os.environ.get("ADA_MLX_PROXY_PORT", "9081"))
 FORCE_NON_STREAM = os.environ.get("ADA_MLX_PROXY_FORCE_NON_STREAM", "1") != "0"

@@ -8,7 +8,7 @@ COMPOSE_FILE="$ROOT/web/docker-compose.yml"
 source "$ROOT/scripts/ada/mlx_defaults.sh"
 
 MLX_HOST="${ADA_MLX_HOST:-127.0.0.1}"
-MLX_PORT="${ADA_MLX_PORT:-8080}"
+MLX_PORT="${ADA_MLX_PORT:-8089}"
 WEBUI_PORT="${ADA_OPEN_WEBUI_PORT:-3000}"
 CONTAINER_NAME="${ADA_OPEN_WEBUI_CONTAINER:-adacode-open-webui}"
 

@@ -24,7 +24,7 @@ ada tri-chat                    # 로컬 + 외부 LLM 3자 대화
 
 설정: [`config/model_registry.yaml`](config/model_registry.yaml)
 
-`chat_profile` → `http://127.0.0.1:8080/v1` (MLX, Open WebUI와 동일 endpoint)
+`chat_profile` → `http://127.0.0.1:8089/v1` (MLX, Open WebUI와 동일 endpoint)
 
 ## Vault
 

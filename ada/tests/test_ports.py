@@ -6,17 +6,26 @@ import pytest
 
 from ada.ports import (
 	DEFAULT_AGENT_PORT,
+	DEFAULT_MLX_PORT,
 	PortConfigError,
 	agent_port,
 	assert_agent_port_allowed,
 	gmail_oauth_redirect_uri,
 	is_mlx_reserved_port,
+	mlx_port,
 )
 
 
 def test_default_agent_port_outside_mlx_range():
 	assert DEFAULT_AGENT_PORT == 9082
+	assert DEFAULT_MLX_PORT == 8089
 	assert not is_mlx_reserved_port(DEFAULT_AGENT_PORT)
+	assert is_mlx_reserved_port(DEFAULT_MLX_PORT)
+
+
+def test_default_mlx_port(monkeypatch):
+	monkeypatch.delenv("ADA_MLX_PORT", raising=False)
+	assert mlx_port() == 8089
 
 
 def test_reserved_range_rejects_mlx_ports():

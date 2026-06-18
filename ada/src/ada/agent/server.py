@@ -33,11 +33,11 @@ from ada.openai_models import (
 )
 from ada.vault import VaultError
 
-from ada.ports import agent_host, agent_port
+from ada.ports import agent_host, agent_port, mlx_upstream_url
 
 HOST = agent_host()
 PORT = agent_port()
-MLX_UPSTREAM = os.environ.get("MLX_UPSTREAM", "http://127.0.0.1:8080").rstrip("/")
+MLX_UPSTREAM = mlx_upstream_url()
 FORCE_NON_STREAM = False
 CORS_ORIGINS = [
 	origin.strip()
@@ -101,8 +101,12 @@ def create_app(email_platform: EmailPlatform | None = None) -> FastAPI:
 				resp = await client.get(f"{MLX_UPSTREAM}/health")
 				resp.raise_for_status()
 				upstream = resp.json()
-				if isinstance(upstream, dict) and upstream.get("loaded_model"):
-					payload["loaded_model"] = str(upstream["loaded_model"])
+				if isinstance(upstream, dict):
+					from ada.openai_models import parse_health_model
+
+					loaded = parse_health_model(upstream)
+					if loaded:
+						payload["loaded_model"] = loaded
 		except httpx.HTTPError:
 			pass
 		return payload
@@ -249,7 +253,7 @@ def main() -> int:
 	from ada.eval.harness.stack_check import is_mlx_upstream_reachable
 
 	if not is_mlx_upstream_reachable():
-		upstream = os.environ.get("MLX_UPSTREAM", "http://127.0.0.1:8080").rstrip("/")
+		upstream = mlx_upstream_url()
 		print(
 			f"WARNING: LLM server is not reachable at {upstream} — agent will start; "
 			"chat works once mlx_vlm.server is up.",

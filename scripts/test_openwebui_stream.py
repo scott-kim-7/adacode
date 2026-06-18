@@ -88,7 +88,7 @@ async def test(
 
 def default_targets() -> list[tuple[str, str]]:
 	agent_port = os.environ.get("ADA_AGENT_PORT", "9082")
-	mlx_port = os.environ.get("ADA_MLX_PORT", "8080")
+	mlx_port = os.environ.get("ADA_MLX_PORT", "8089")
 	host = os.environ.get("ADA_MLX_HOST", "127.0.0.1")
 	return [
 		(f"http://{host}:{agent_port}/v1/chat/completions", f"agent{agent_port}"),

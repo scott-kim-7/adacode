@@ -13,7 +13,7 @@ def test_load_registry_has_three_profiles():
 def test_chat_profile_points_to_local_openapi():
 	reg = load_registry()
 	p = get_profile(reg, "chat_profile")
-	assert "127.0.0.1:8080" in p.base_url
+	assert "127.0.0.1:8089" in p.base_url
 	assert p.base_url.endswith("/v1")
 
 

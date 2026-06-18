@@ -5,7 +5,7 @@ ada_mlx_host() {
 }
 
 ada_mlx_port() {
-	echo "${ADA_MLX_PORT:-8080}"
+	echo "${ADA_MLX_PORT:-8089}"
 }
 
 ada_mlx_url() {

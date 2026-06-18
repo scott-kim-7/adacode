@@ -41,7 +41,7 @@ fi
 # shellcheck source=ada/mlx_defaults.sh
 source "$ROOT/scripts/ada/mlx_defaults.sh"
 HOST="${ADA_MLX_HOST:-127.0.0.1}"
-PORT="${ADA_MLX_PORT:-8080}"
+PORT="${ADA_MLX_PORT:-8089}"
 if curl -sf "http://${HOST}:${PORT}/v1/models" >/dev/null 2>&1; then
 	echo "MLX server reachable at http://${HOST}:${PORT}"
 else
