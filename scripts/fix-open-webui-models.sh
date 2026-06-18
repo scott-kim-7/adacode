@@ -8,7 +8,7 @@ source "$ROOT/scripts/ada/mlx_defaults.sh"
 
 HOST="$(ada_mlx_host)"
 PORT="$(ada_mlx_port)"
-AGENT_PORT="${ADA_AGENT_PORT:-8082}"
+AGENT_PORT="${ADA_AGENT_PORT:-9082}"
 
 echo "=== Fix Open WebUI model list ==="
 

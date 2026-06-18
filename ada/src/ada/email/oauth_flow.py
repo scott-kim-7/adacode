@@ -7,7 +7,7 @@ from typing import Any
 
 from google_auth_oauthlib.flow import Flow
 
-from ada.email.gmail_client import GMAIL_SCOPES, REDIRECT_URI, oauth_client_config, tokens_from_credentials
+from ada.email.gmail_client import GMAIL_SCOPES, oauth_client_config, redirect_uri, tokens_from_credentials
 from ada.email.vault_tokens import GmailVaultTokens
 
 
@@ -52,7 +52,7 @@ class GmailOAuthService:
 		flow = Flow.from_client_config(
 			oauth_client_config(self._vault),
 			scopes=GMAIL_SCOPES,
-			redirect_uri=REDIRECT_URI,
+			redirect_uri=redirect_uri(),
 			state=state,
 		)
 		auth_url, _ = flow.authorization_url(
@@ -77,7 +77,7 @@ class GmailOAuthService:
 		flow = Flow.from_client_config(
 			oauth_client_config(self._vault),
 			scopes=GMAIL_SCOPES,
-			redirect_uri=REDIRECT_URI,
+			redirect_uri=redirect_uri(),
 			state=state,
 			code_verifier=pending.code_verifier,
 			autogenerate_code_verifier=False,

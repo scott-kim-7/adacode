@@ -15,7 +15,7 @@ ada/
 │   │   ├── llm.py               # profile → LLM callable
 │   │   ├── content.py           # multimodal content parse/preserve
 │   │   ├── openai_compat.py     # OpenAI messages ↔ MainGraph
-│   │   └── server.py            # FastAPI /v1/chat/completions (:8082)
+│   │   └── server.py            # FastAPI /v1/chat/completions (:9082)
 │   ├── llm.py                   # OpenAI-compatible HTTP client
 │   ├── registry.py
 │   ├── vault.py
@@ -29,10 +29,10 @@ ada/
 
 | 구성 | 경로 |
 |------|------|
-| Open WebUI | [`web/docker-compose.yml`](../web/docker-compose.yml) → `:8082` agent API |
+| Open WebUI | [`web/docker-compose.yml`](../web/docker-compose.yml) → `:9082` agent API |
 | LangGraph agent | [`scripts/ensure-ada-agent-server.sh`](../scripts/ensure-ada-agent-server.sh) |
 | MLX 서버 | 외부 프로세스 — `http://127.0.0.1:8080/v1` (Ada가 기동/종료하지 않음) |
 | 원스톱 | [`scripts/ada.sh`](../scripts/ada.sh) |
 
-Open WebUI → LangGraph MainGraph (`:8082`) → MLX (`:8080`).  
+Open WebUI → LangGraph MainGraph (`:9082`) → MLX (`:8080`).  
 터미널 REPL: `ada ada-agent` — [docs/ada/agent/README.md](../docs/ada/agent/README.md)

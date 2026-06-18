@@ -10,7 +10,7 @@ from open_webui.utils.auth import get_admin_user
 router = APIRouter()
 log = logging.getLogger(__name__)
 
-AGENT_BASE = os.environ.get("ADA_AGENT_BASE_URL", "http://host.docker.internal:8082").rstrip("/")
+AGENT_BASE = os.environ.get("ADA_AGENT_BASE_URL", "http://host.docker.internal:9082").rstrip("/")
 PROXY_HEADER = "X-Ada-WebUI-Proxy"
 PROXY_HEADER_VALUE = "1"
 

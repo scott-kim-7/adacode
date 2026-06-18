@@ -10,7 +10,7 @@ os.environ.setdefault("ADA_EVAL_MODEL", "eval-offline")
 
 
 def pytest_configure(config: pytest.Config) -> None:
-	config.addinivalue_line("markers", "eval_smoke: Agent eval smoke gates (requires :8082 for live runs)")
+	config.addinivalue_line("markers", "eval_smoke: Agent eval smoke gates (requires :9082 for live runs)")
 
 
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
@@ -22,7 +22,7 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
 @pytest.fixture
 def require_agent_stack():
 	if not is_agent_reachable():
-		pytest.skip("Agent API :8082 not reachable — start ./scripts/ada.sh start")
+		pytest.skip("Agent API :9082 not reachable — start ./scripts/ada.sh start")
 
 
 @pytest.fixture

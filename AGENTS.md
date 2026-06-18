@@ -16,7 +16,7 @@ This repository is a **web-only** local AI platform. The main chat UI is **Open 
 ```bash
 ./scripts/install-step2.sh    # ada venv
 # Prerequisite: mlx_lm / mlx-vlm on :8080 (started outside Ada)
-./scripts/ada.sh start        # Agent :8082 + Open WebUI :3000
+./scripts/ada.sh start        # Agent :9082 + Open WebUI :3000
 ./scripts/verify-regression.sh  # regression contracts (22 tests)
 ./scripts/verify-ada.sh         # regression + full pytest + compose smoke
 ```

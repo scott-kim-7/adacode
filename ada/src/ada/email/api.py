@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from ada.email.auth import require_email_auth
 from ada.email.platform import EmailPlatform
 from ada.email.service import GmailAttachment, IngestedMessage
+from ada.ports import agent_port, gmail_oauth_redirect_uri
 from ada.vault import VaultError
 
 
@@ -204,6 +205,8 @@ def build_email_router(
 			"gmail_client": readiness.gmail_client,
 			"gmail_client_status": readiness.gmail_client_status,
 			"steps": list(readiness.steps),
+			"redirect_uri": gmail_oauth_redirect_uri(),
+			"agent_port": agent_port(),
 		}
 
 	@router.put("/ops/email/oauth-client")

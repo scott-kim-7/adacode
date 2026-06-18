@@ -64,7 +64,7 @@ def test_resolve_model_id_via_agent_base_uses_mlx_health():
 
 	with patch("ada.openai_models.httpx.Client") as client_cls:
 		client_cls.return_value.__enter__.return_value.get.return_value = health_resp
-		got = resolve_model_id("http://127.0.0.1:8082/v1")
+		got = resolve_model_id("http://127.0.0.1:9082/v1")
 	assert got == "mlx-loaded"
 	call_url = client_cls.return_value.__enter__.return_value.get.call_args[0][0]
 	assert call_url == "http://127.0.0.1:8080/health"

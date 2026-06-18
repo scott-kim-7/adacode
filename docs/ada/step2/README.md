@@ -89,4 +89,4 @@ ada tri-chat --once "Summarize what Tri-Chat does in one sentence."
 
 ## 다음
 
-Step 3 — 자율 Agent. LangGraph agent API는 Open WebUI와 `:8082`로 연동됩니다.
+Step 3 — 자율 Agent. LangGraph agent API는 Open WebUI와 `:9082`로 연동됩니다.

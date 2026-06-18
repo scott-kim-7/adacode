@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Ada eval smoke regression — requires Agent :8082 + MLX :8080 for live runs.
+# Ada eval smoke regression — requires Agent :9082 + MLX :8080 for live runs.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -16,11 +16,11 @@ fi
 source "$VENV/bin/activate"
 pip install -q -e "$ADA[dev]"
 
-export ADA_EVAL_BASE_URL="${ADA_EVAL_BASE_URL:-http://127.0.0.1:8082/v1}"
+export ADA_EVAL_BASE_URL="${ADA_EVAL_BASE_URL:-http://127.0.0.1:9082/v1}"
 export ADA_AGENT_PROFILE="${ADA_AGENT_PROFILE:-chat_profile}"
 
 echo ""
-echo "Stack check (MLX :8080, Agent :8082)..."
+echo "Stack check (MLX :8080, Agent :9082)..."
 python - <<'PY'
 from ada.eval.harness.stack_check import require_agent_stack
 require_agent_stack()

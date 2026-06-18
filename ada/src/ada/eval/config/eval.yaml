@@ -1,4 +1,4 @@
-endpoint: http://127.0.0.1:8082/v1
+endpoint: http://127.0.0.1:9082/v1
 vendor_root: .eval/vendor
 baseline_path: ada/src/ada/eval/results/baseline.json
 model_profile: chat_profile

@@ -27,7 +27,7 @@
 	"Local API Key": "Local API Key",
 	"Gmail accounts": "Gmail accounts",
 	"OAuth prerequisites": "OAuth prerequisites",
-	"Ada agent must run on host port 8082. Register redirect URI http://127.0.0.1:8082/oauth/gmail/callback in Google Cloud Console.": "Ada agent must run on host port 8082. Register redirect URI http://127.0.0.1:8082/oauth/gmail/callback in Google Cloud Console.",
+	"Ada agent must run on host port {{port}}. Register redirect URI {{redirect}} in Google Cloud Console.": "Ada agent must run on host port {{port}}. Register redirect URI {{redirect}} in Google Cloud Console.",
 	"Mark read": "Mark read",
 	"empty = unlimited": "empty = unlimited",
 	"Gmail OAuth setup required": "Gmail OAuth setup required",

@@ -33,8 +33,10 @@ from ada.openai_models import (
 )
 from ada.vault import VaultError
 
-HOST = os.environ.get("ADA_AGENT_HOST", "127.0.0.1")
-PORT = int(os.environ.get("ADA_AGENT_PORT", "8082"))
+from ada.ports import agent_host, agent_port
+
+HOST = agent_host()
+PORT = agent_port()
 MLX_UPSTREAM = os.environ.get("MLX_UPSTREAM", "http://127.0.0.1:8080").rstrip("/")
 FORCE_NON_STREAM = False
 CORS_ORIGINS = [

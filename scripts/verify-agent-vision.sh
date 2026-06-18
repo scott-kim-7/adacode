@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Smoke test: LangGraph agent API (:8082) accepts multimodal chat.
+# Smoke test: LangGraph agent API (:9082) accepts multimodal chat.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -7,7 +7,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 source "$ROOT/scripts/ada/mlx_defaults.sh"
 
 HOST="${ADA_AGENT_HOST:-127.0.0.1}"
-AGENT_PORT="${ADA_AGENT_PORT:-8082}"
+AGENT_PORT="${ADA_AGENT_PORT:-9082}"
 MLX_PORT="${ADA_MLX_PORT:-8080}"
 
 echo "=== Verify agent vision (:${AGENT_PORT}) ==="

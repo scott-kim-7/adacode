@@ -107,7 +107,7 @@ def main() -> int:
     parser.add_argument(
         "--agent-url",
         required=True,
-        help="Ada Agent OpenAI base URL (e.g. http://host.docker.internal:8082/v1)",
+        help="Ada Agent OpenAI base URL (e.g. http://host.docker.internal:9082/v1)",
     )
     parser.add_argument("--api-key", default="local")
     parser.add_argument("--model-id", default="", help="ui.default_models value")

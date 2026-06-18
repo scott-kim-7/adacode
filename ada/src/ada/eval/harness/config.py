@@ -30,7 +30,7 @@ def eval_base_url() -> str:
 	if env:
 		return env.rstrip("/")
 	cfg = load_eval_config()
-	return str(cfg.get("endpoint") or "http://127.0.0.1:8082/v1").rstrip("/")
+	return str(cfg.get("endpoint") or "http://127.0.0.1:9082/v1").rstrip("/")
 
 
 def vendor_root() -> Path:

@@ -284,13 +284,13 @@ def patch_dockerfile(path: Path) -> None:
         text = replace_once(
             text,
             "FROM --platform=$BUILDPLATFORM node:22-alpine3.20 AS build\nARG BUILD_HASH",
-            "FROM --platform=$BUILDPLATFORM node:22-alpine3.20 AS build\nARG BUILD_HASH\nARG PUBLIC_ADA_AGENT_BASE_URL=http://host.docker.internal:8082",
+            "FROM --platform=$BUILDPLATFORM node:22-alpine3.20 AS build\nARG BUILD_HASH\nARG PUBLIC_ADA_AGENT_BASE_URL=http://host.docker.internal:9082",
             label="dockerfile-arg",
         )
         text = replace_once(
             text,
             "ENV APP_BUILD_HASH=${BUILD_HASH}\nRUN npm run build",
-            "ENV APP_BUILD_HASH=${BUILD_HASH}\nENV PUBLIC_ADA_AGENT_BASE_URL=${PUBLIC_ADA_AGENT_BASE_URL}\nENV PUBLIC_ADA_AGENT_PORT=8082\nRUN npm run build",
+            "ENV APP_BUILD_HASH=${BUILD_HASH}\nENV PUBLIC_ADA_AGENT_BASE_URL=${PUBLIC_ADA_AGENT_BASE_URL}\nENV PUBLIC_ADA_AGENT_PORT=9082\nRUN npm run build",
             label="dockerfile-env",
         )
     if '\nENV NODE_OPTIONS="--max-old-space-size=' not in text:

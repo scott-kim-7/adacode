@@ -8,7 +8,7 @@ ADA="$ROOT/ada"
 VENV="$ADA/.venv"
 
 export ROOT ADA VENV
-export ADA_EVAL_BASE_URL="${ADA_EVAL_BASE_URL:-http://127.0.0.1:8082/v1}"
+export ADA_EVAL_BASE_URL="${ADA_EVAL_BASE_URL:-http://127.0.0.1:9082/v1}"
 export ADA_EVAL_VENDOR_ROOT="${ADA_EVAL_VENDOR_ROOT:-$ROOT/.eval/vendor}"
 export ADA_AGENT_PROFILE="${ADA_AGENT_PROFILE:-chat_profile}"
 
@@ -25,7 +25,7 @@ resolve_model() {
 	python - <<'PY'
 from ada.openai_models import resolve_model_id
 import os
-base = os.environ.get("ADA_EVAL_BASE_URL", "http://127.0.0.1:8082/v1").rstrip("/")
+base = os.environ.get("ADA_EVAL_BASE_URL", "http://127.0.0.1:9082/v1").rstrip("/")
 print(resolve_model_id(base, api_key=os.environ.get("OPENAI_API_KEY", "local")))
 PY
 }

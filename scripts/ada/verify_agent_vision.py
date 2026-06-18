@@ -15,7 +15,7 @@ TINY_PNG_B64 = (
 
 def main() -> int:
 	host = os.environ.get("ADA_AGENT_HOST", "127.0.0.1")
-	port = os.environ.get("ADA_AGENT_PORT", "8082")
+	port = os.environ.get("ADA_AGENT_PORT", "9082")
 	base = f"http://{host}:{port}/v1"
 
 	sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parents[2] / "ada" / "src"))

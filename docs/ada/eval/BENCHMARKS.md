@@ -1,6 +1,6 @@
 # Ada Agent Benchmark — 구현 정리
 
-LangGraph **Agent API (`:8082`)** 를 평가 대상으로 하는 5개 업계 벤치마크 연동 현황입니다.  
+LangGraph **Agent API (`:9082`)** 를 평가 대상으로 하는 5개 업계 벤치마크 연동 현황입니다.  
 Open WebUI와 동일 경로(Agent → MLX)로 모델을 호출합니다.
 
 > 실행 가이드: [README.md](./README.md)  
@@ -17,7 +17,7 @@ flowchart LR
     Adapter[ada/eval/adapters/*]
   end
   subgraph ada_stack [Ada Stack]
-    Agent[Agent API :8082]
+    Agent[Agent API :9082]
     ToolGraph[ToolAgentGraph]
     MLX[MLX :8080]
   end
@@ -189,7 +189,7 @@ ada/src/ada/eval/
 │   ├── toolsandbox_adapter.py
 │   └── mcpagent_adapter.py
 ├── harness/
-│   ├── agent_client.py        # OpenAI SDK → :8082
+│   ├── agent_client.py        # OpenAI SDK → :9082
 │   ├── stack_check.py         # Agent/MLX alive
 │   ├── results.py             # JSON schema, baseline compare
 │   ├── report.py              # Markdown 리포트 생성
@@ -242,7 +242,7 @@ export ADA_MCPAGENTBENCH_REPO=<url>   # MCPAgentBench (선택)
 
 | 변수 | 기본값 | 설명 |
 |------|--------|------|
-| `ADA_EVAL_BASE_URL` | `http://127.0.0.1:8082/v1` | Agent API |
+| `ADA_EVAL_BASE_URL` | `http://127.0.0.1:9082/v1` | Agent API |
 | `ADA_EVAL_VENDOR_ROOT` | `.eval/vendor` | vendor clone 경로 |
 | `ADA_AGENT_PROFILE` | `chat_profile` | [`model_registry.yaml`](../../../ada/config/model_registry.yaml) |
 | `ADA_EVAL_RUN_LIVE` | `1` (full regression 시) | live pytest 활성화 |
@@ -259,7 +259,7 @@ export ADA_MCPAGENTBENCH_REPO=<url>   # MCPAgentBench (선택)
   "benchmark": "tau2",
   "mode": "smoke",
   "timestamp": "ISO8601",
-  "endpoint": "http://127.0.0.1:8082/v1",
+  "endpoint": "http://127.0.0.1:9082/v1",
   "model": "openapi-resolved",
   "tasks_total": 5,
   "tasks_passed": 5,

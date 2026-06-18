@@ -19,7 +19,7 @@ pytestmark = pytest.mark.eval_smoke
 
 def test_stack_reachable_or_skip():
 	if not is_agent_reachable():
-		pytest.skip("Agent API :8082 not reachable")
+		pytest.skip("Agent API :9082 not reachable")
 	status = stack_status()
 	assert status["agent_reachable"] is True
 
@@ -96,7 +96,7 @@ def test_eval_result_schema_and_baseline():
 		"benchmark": "tau2",
 		"mode": "smoke",
 		"timestamp": "2026-06-06T00:00:00Z",
-		"endpoint": "http://127.0.0.1:8082/v1",
+		"endpoint": "http://127.0.0.1:9082/v1",
 		"model": "test-model",
 		"tasks_total": 5,
 		"tasks_passed": 5,

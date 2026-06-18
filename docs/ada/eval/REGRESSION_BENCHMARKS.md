@@ -1,6 +1,6 @@
 # Ada Regression Benchmarks — 소개 및 실행 방법
 
-Contract regression(22 tests, mock)과 별도로, **실제 Agent API (`:8082`) + MLX** 를 경유해 5개 업계 벤치마크를 돌리는 **Eval regression** 계층입니다.
+Contract regression(22 tests, mock)과 별도로, **실제 Agent API (`:9082`) + MLX** 를 경유해 5개 업계 벤치마크를 돌리는 **Eval regression** 계층입니다.
 
 | 구분 | 대상 | 시간 |
 |------|------|------|
@@ -10,7 +10,7 @@ Contract regression(22 tests, mock)과 별도로, **실제 Agent API (`:8082`) +
 모든 벤치는 동일 스택을 사용합니다.
 
 ```
-벤치 스크립트 → adapter → Agent API :8082 → ToolAgentGraph → MLX :8080
+벤치 스크립트 → adapter → Agent API :9082 → ToolAgentGraph → MLX :8080
 ```
 
 ---
@@ -19,7 +19,7 @@ Contract regression(22 tests, mock)과 별도로, **실제 Agent API (`:8082`) +
 
 ```bash
 # repo 루트에서
-./scripts/ada.sh start          # MLX :8080 + Agent :8082
+./scripts/ada.sh start          # MLX :8080 + Agent :9082
 
 # (선택) 공식 vendor runner 사용 시
 ./scripts/eval/install-vendors.sh
@@ -28,7 +28,7 @@ Contract regression(22 tests, mock)과 별도로, **실제 Agent API (`:8082`) +
 환경 변수 (기본값으로 보통 설정 불필요):
 
 ```bash
-export ADA_EVAL_BASE_URL=http://127.0.0.1:8082/v1
+export ADA_EVAL_BASE_URL=http://127.0.0.1:9082/v1
 export ADA_AGENT_PROFILE=chat_profile
 export ADA_EVAL_VENDOR_ROOT=$PWD/.eval/vendor
 ```

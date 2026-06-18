@@ -166,6 +166,8 @@ export type OAuthReadiness = {
 	gmail_client: boolean;
 	gmail_client_status?: 'ok' | 'missing' | 'invalid';
 	steps: string[];
+	redirect_uri?: string;
+	agent_port?: number;
 };
 
 export async function getOAuthReadiness(): Promise<OAuthReadiness> {

@@ -30,7 +30,7 @@ if ! docker info >/dev/null 2>&1; then
 	exit 1
 fi
 
-AGENT_PORT="${ADA_AGENT_PORT:-8082}"
+AGENT_PORT="${ADA_AGENT_PORT:-9082}"
 
 if [[ ! -d "$ROOT/web/open-webui/.git" ]]; then
 	echo "Vendoring Open WebUI v0.6.42 with Ada overlays ..."

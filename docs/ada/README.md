@@ -7,7 +7,7 @@
 ```bash
 ./scripts/install-step2.sh
 # MLX :8080 — 외부에서 기동 (mlx_lm / mlx-vlm)
-./scripts/ada.sh start           # Agent :8082 + Open WebUI :3000
+./scripts/ada.sh start           # Agent :9082 + Open WebUI :3000
 ```
 
 브라우저 → http://127.0.0.1:3000 → 로컬 계정 생성 → 채팅
@@ -44,4 +44,4 @@
 
 1. 로컬 MLX + Open WebUI로 프라이빗 채팅
 2. `ada/` Python으로 registry·vault·Tri-Chat·agent CLI
-3. LangGraph agent API(:8082)로 Open WebUI ↔ MainGraph 연동
+3. LangGraph agent API(:9082)로 Open WebUI ↔ MainGraph 연동

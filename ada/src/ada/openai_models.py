@@ -5,6 +5,7 @@ from urllib.parse import urlparse
 
 import httpx
 
+from ada.ports import agent_port, mlx_port
 from ada.registry import Profile
 
 
@@ -21,12 +22,12 @@ def mlx_upstream_base(base_url: str) -> str:
 		return override
 	root = api_root(base_url)
 	parsed = urlparse(root)
-	agent_port = os.environ.get("ADA_AGENT_PORT", "8082")
-	mlx_port = os.environ.get("ADA_MLX_PORT", "8080")
-	if parsed.port is not None and str(parsed.port) == str(agent_port):
+	agent_port_val = agent_port()
+	mlx_port_val = mlx_port()
+	if parsed.port is not None and parsed.port == agent_port_val:
 		host = parsed.hostname or "127.0.0.1"
 		scheme = parsed.scheme or "http"
-		return f"{scheme}://{host}:{mlx_port}"
+		return f"{scheme}://{host}:{mlx_port_val}"
 	return root
 
 

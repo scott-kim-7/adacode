@@ -7,6 +7,7 @@ from ada.agent.content import content_has_image, parse_openai_content
 from ada.agent.openai_compat import openai_messages_to_langchain, split_history_and_user
 from ada.agent.llm import _to_chat_messages
 from ada.paths import ada_root
+from ada.ports import DEFAULT_AGENT_PORT
 from ada.registry import get_profile, load_registry
 from fixtures.vision_fixtures import (
 	TINY_PNG_B64,
@@ -35,7 +36,7 @@ def test_regression_docker_compose_points_to_agent_api():
 	repo_root = ada_root().parent
 	compose = yaml.safe_load((repo_root / "web" / "docker-compose.yml").read_text(encoding="utf-8"))
 	env = compose["services"]["open-webui"]["environment"]
-	assert ":8082" in env["OPENAI_API_BASE_URL"]
+	assert f":{DEFAULT_AGENT_PORT}" in env["OPENAI_API_BASE_URL"]
 	assert env["ENABLE_DIRECT_CONNECTIONS"] == "false"
 
 

@@ -295,7 +295,14 @@ let summarySkipRules: SummarySkipRule[] = [];
 
 				<div class="mb-2.5 text-xs text-gray-500">
 					{$i18n.t('OAuth prerequisites')}
-					<p class="mt-1">{$i18n.t('Ada agent must run on host port 8082. Register redirect URI http://127.0.0.1:8082/oauth/gmail/callback in Google Cloud Console.')}</p>
+					<p class="mt-1">
+						{$i18n.t('Ada agent must run on host port {{port}}. Register redirect URI {{redirect}} in Google Cloud Console.', {
+							port: oauthReadiness?.agent_port ?? 9082,
+							redirect:
+								oauthReadiness?.redirect_uri ??
+								`http://127.0.0.1:${oauthReadiness?.agent_port ?? 9082}/oauth/gmail/callback`
+						})}
+					</p>
 				</div>
 
 				{#if oauthReadiness?.vault_unlocked && !oauthReadiness.gmail_client}

@@ -1,6 +1,6 @@
 # Ada Agent Eval Benchmarks
 
-LangGraph Agent API (`:8082`) 대상 업계 벤치마크 smoke/full 실행 가이드.
+LangGraph Agent API (`:9082`) 대상 업계 벤치마크 smoke/full 실행 가이드.
 
 **구현 상세:** [BENCHMARKS.md](./BENCHMARKS.md) · **5종 소개·실행:** [REGRESSION_BENCHMARKS.md](./REGRESSION_BENCHMARKS.md)
 
@@ -21,7 +21,7 @@ Contract + 벤치 5개 + eval pytest + 통합 리포트:
 ./scripts/ada.sh start
 ./scripts/verify-regression-full.sh
 ./scripts/verify-regression-full.sh --update-baseline   # baseline.json 갱신
-./scripts/verify-regression-full.sh                       # MLX :8080 + Agent :8082 선행 필요
+./scripts/verify-regression-full.sh                       # MLX :8080 + Agent :9082 선행 필요
 ```
 
 **산출물:** `ada/src/ada/eval/reports/full-regression-latest.md`
@@ -49,7 +49,7 @@ Contract + 벤치 5개 + eval pytest + 통합 리포트:
 환경 변수:
 
 ```bash
-export ADA_EVAL_BASE_URL=http://127.0.0.1:8082/v1
+export ADA_EVAL_BASE_URL=http://127.0.0.1:9082/v1
 export ADA_EVAL_VENDOR_ROOT=$PWD/.eval/vendor
 export ADA_AGENT_PROFILE=chat_profile
 ```
@@ -77,7 +77,7 @@ pytest ada/tests/regression/eval/ -m eval_smoke -q
 pytest ada/tests/regression/eval/test_tau2_smoke.py -m eval_smoke -q
 ```
 
-Agent `:8082` 미기동 시 live smoke 테스트는 skip. Live 실행: `ADA_EVAL_RUN_LIVE=1 pytest ...`
+Agent `:9082` 미기동 시 live smoke 테스트는 skip. Live 실행: `ADA_EVAL_RUN_LIVE=1 pytest ...`
 
 ## 리포트
 

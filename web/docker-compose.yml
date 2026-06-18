@@ -3,22 +3,22 @@ services:
     build:
       context: ./open-webui
       args:
-        PUBLIC_ADA_AGENT_BASE_URL: ${ADA_AGENT_BASE_URL:-http://host.docker.internal:8082}
+        PUBLIC_ADA_AGENT_BASE_URL: ${ADA_AGENT_BASE_URL:-http://host.docker.internal:9082}
     container_name: ${ADA_OPEN_WEBUI_CONTAINER:-adacode-open-webui}
     ports:
       - "${ADA_OPEN_WEBUI_PORT:-3000}:8080"
     environment:
       # OpenAI-compatible MLX connection (required for model list + chat)
       ENABLE_OPENAI_API: "true"
-      OPENAI_API_BASE_URL: ${OPENAI_API_BASE_URL:-http://host.docker.internal:8082/v1}
-      OPENAI_API_BASE_URLS: ${OPENAI_API_BASE_URL:-http://host.docker.internal:8082/v1}
+      OPENAI_API_BASE_URL: ${OPENAI_API_BASE_URL:-http://host.docker.internal:9082/v1}
+      OPENAI_API_BASE_URLS: ${OPENAI_API_BASE_URL:-http://host.docker.internal:9082/v1}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-local}
       OPENAI_API_KEYS: ${OPENAI_API_KEY:-local}
       # Auto-select mlx_vlm --model (set by serve-open-webui.sh from /health loaded_model)
       DEFAULT_MODELS: ${DEFAULT_MODELS:-}
       DEFAULT_PINNED_MODELS: ${DEFAULT_PINNED_MODELS:-}
       # Model list from OpenAPI GET /v1/models on OPENAI_API_BASE_URL
-      # Keep chat traffic on the LangGraph agent API (8082), not browser → MLX direct
+      # Keep chat traffic on the LangGraph agent API (9082), not browser → MLX direct
       ENABLE_DIRECT_CONNECTIONS: "false"
       # Agent streams plan (thinking) + respond by default; set ADA_AGENT_FORCE_NON_STREAM=1 to buffer
       # ADA_AGENT_FORCE_NON_STREAM: "0"
@@ -26,7 +26,7 @@ services:
       ENABLE_OLLAMA_API: "false"
       # Keep login sessions across container recreate/restart (empty = new key each time → 401 toast)
       WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY:-adacode-local-webui-secret}
-      ADA_AGENT_BASE_URL: ${ADA_AGENT_BASE_URL:-http://host.docker.internal:8082}
+      ADA_AGENT_BASE_URL: ${ADA_AGENT_BASE_URL:-http://host.docker.internal:9082}
     volumes:
       - open-webui:/app/backend/data
     extra_hosts:

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Start mlx-openai-proxy (8081) if MLX (8080) is up.
+# Start mlx-openai-proxy (9081) if MLX (8080) is up.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -8,7 +8,7 @@ source "$ROOT/scripts/ada/mlx_defaults.sh"
 
 MLX_HOST="${ADA_MLX_HOST:-127.0.0.1}"
 MLX_PORT="${ADA_MLX_PORT:-8080}"
-PROXY_PORT="${ADA_MLX_PROXY_PORT:-8081}"
+PROXY_PORT="${ADA_MLX_PROXY_PORT:-9081}"
 PID_FILE="${ADA_MLX_PROXY_PID:-$ROOT/.ada-mlx-proxy.pid}"
 LOG="${ADA_MLX_PROXY_LOG:-$ROOT/.ada-mlx-proxy.log}"
 VENV="$ROOT/ada/.venv"

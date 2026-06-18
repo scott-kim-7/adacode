@@ -87,7 +87,7 @@ async def test(
 
 
 def default_targets() -> list[tuple[str, str]]:
-	agent_port = os.environ.get("ADA_AGENT_PORT", "8082")
+	agent_port = os.environ.get("ADA_AGENT_PORT", "9082")
 	mlx_port = os.environ.get("ADA_MLX_PORT", "8080")
 	host = os.environ.get("ADA_MLX_HOST", "127.0.0.1")
 	return [
@@ -106,7 +106,7 @@ async def main() -> int:
 	parser.add_argument(
 		"--agent-only",
 		action="store_true",
-		help="Only test Ada Agent (:8082 by default)",
+		help="Only test Ada Agent (:9082 by default)",
 	)
 	parser.add_argument(
 		"--plan-smoke",

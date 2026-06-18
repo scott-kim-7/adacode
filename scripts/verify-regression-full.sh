@@ -6,7 +6,7 @@
 #   ./scripts/verify-regression-full.sh --update-baseline  # refresh baseline.json
 #   ./scripts/verify-regression-full.sh --benchmark-mode full   # WARNING: days on local MLX
 #
-# Prerequisite: MLX :8080 and Ada Agent :8082 must already be running.
+# Prerequisite: MLX :8080 and Ada Agent :9082 must already be running.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -33,7 +33,7 @@ Options:
   -h, --help            Show this help
 
 Prerequisite:
-  MLX :8080 and Ada Agent :8082 must already be running.
+  MLX :8080 and Ada Agent :9082 must already be running.
 
 Output:
   ada/src/ada/eval/reports/full-regression-latest.md
@@ -92,7 +92,7 @@ fi
 source "$VENV/bin/activate"
 pip install -q -e "$ADA[dev]"
 
-export ADA_EVAL_BASE_URL="${ADA_EVAL_BASE_URL:-http://127.0.0.1:8082/v1}"
+export ADA_EVAL_BASE_URL="${ADA_EVAL_BASE_URL:-http://127.0.0.1:9082/v1}"
 export ADA_AGENT_PROFILE="${ADA_AGENT_PROFILE:-chat_profile}"
 
 STARTED_AT="$(python - <<'PY'
@@ -164,7 +164,7 @@ MLX_UP="$(python -c "import json; print(json.loads('''$STACK_JSON''')['mlx_reach
 
 if [[ "$AGENT_UP" != "True" || "$MLX_UP" != "True" ]]; then
 	echo ""
-	echo "ERROR: Agent :8082 and MLX :8080 must be running for full regression." >&2
+	echo "ERROR: Agent :9082 and MLX :8080 must be running for full regression." >&2
 	echo "  Start LLM server on :8080, then: ./scripts/ensure-ada-agent-server.sh" >&2
 	echo "  Or: ./scripts/ada.sh start  (MLX must already be up)" >&2
 	exit 1

@@ -10,7 +10,7 @@ if ! declare -F ada_mlx_host >/dev/null 2>&1; then
 fi
 
 CONTAINER="${ADA_OPEN_WEBUI_CONTAINER:-adacode-open-webui}"
-AGENT_PORT="${ADA_AGENT_PORT:-8082}"
+AGENT_PORT="${ADA_AGENT_PORT:-9082}"
 WEBUI_PORT="${ADA_OPEN_WEBUI_PORT:-3000}"
 SCRIPT="$ROOT/scripts/ada/sync_openwebui_config.py"
 

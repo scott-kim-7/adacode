@@ -102,6 +102,8 @@ def test_oauth_readiness_reports_missing_vault(tmp_path: Path):
 		body = resp.json()
 		assert body["ready"] is False
 		assert len(body["steps"]) >= 1
+		assert body["agent_port"] == 9082
+		assert body["redirect_uri"] == "http://127.0.0.1:9082/oauth/gmail/callback"
 
 		start = client.get("/oauth/gmail/start", headers=_auth_headers())
 		assert start.status_code == 503

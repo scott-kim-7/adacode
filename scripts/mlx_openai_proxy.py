@@ -21,7 +21,7 @@ from fastapi.responses import Response, StreamingResponse
 
 UPSTREAM = os.environ.get("MLX_UPSTREAM", "http://127.0.0.1:8080").rstrip("/")
 HOST = os.environ.get("ADA_MLX_PROXY_HOST", "127.0.0.1")
-PORT = int(os.environ.get("ADA_MLX_PROXY_PORT", "8081"))
+PORT = int(os.environ.get("ADA_MLX_PROXY_PORT", "9081"))
 FORCE_NON_STREAM = os.environ.get("ADA_MLX_PROXY_FORCE_NON_STREAM", "1") != "0"
 
 REASONING_KEYS = frozenset({"reasoning", "reasoning_content", "thinking"})

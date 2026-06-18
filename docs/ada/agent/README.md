@@ -1,6 +1,6 @@
 # Ada LangGraph MainGraph
 
-Open WebUI는 **LangGraph agent API**(`:8082`)를 통해 MLX에 연결합니다. 터미널에서는 `ada ada-agent` CLI를 쓸 수 있습니다.
+Open WebUI는 **LangGraph agent API**(`:9082`)를 통해 MLX에 연결합니다. 터미널에서는 `ada ada-agent` CLI를 쓸 수 있습니다.
 
 ## 그래프 개요
 
@@ -74,9 +74,9 @@ LLM 서버(`http://127.0.0.1:8080/v1`, 외부 기동)와 `./scripts/ensure-ada-a
 
 | 경로 | LangGraph |
 |------|-----------|
-| Browser → Open WebUI → **:8082 agent API** → MainGraph → MLX | **사용** |
+| Browser → Open WebUI → **:9082 agent API** → MainGraph → MLX | **사용** |
 | Terminal → `ada ada-agent` | **MainGraph** |
-| (선택) `:8081` MLX proxy → MLX 직접 | 사용 안 함 |
+| (선택) `:9081` MLX proxy → MLX 직접 | 사용 안 함 |
 
 Agent API 기동:
 
@@ -86,7 +86,7 @@ Agent API 기동:
 ./scripts/ada.sh start
 ```
 
-Open WebUI Connections URL: `http://host.docker.internal:8082/v1` (키: `local`)
+Open WebUI Connections URL: `http://host.docker.internal:9082/v1` (키: `local`)
 
 ## 실시간 스트리밍 (기본 ON)
 
@@ -136,7 +136,7 @@ MainGraph의 `route`는 현재 키워드 휴리스틱이며, 이후 LLM 분류 �
 
 ## Gmail 이메일 대화 API (신규)
 
-Main agent 서버(`:8082`)에 이메일 커넥터 API가 함께 노출됩니다.
+Main agent 서버(`:9082`)에 이메일 커넥터 API가 함께 노출됩니다.
 
 ### 엔드포인트
 

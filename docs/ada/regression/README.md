@@ -19,7 +19,7 @@ cd ada && pytest tests/regression/ -m regression -q
 
 ```bash
 ./scripts/verify-step1-vision.sh   # MLX :8080 vision
-./scripts/verify-agent-vision.sh   # Agent :8082 vision
+./scripts/verify-agent-vision.sh   # Agent :9082 vision
 ```
 
 ## 구조
@@ -39,7 +39,7 @@ ada/tests/regression/
 | **MainGraph** | direct 1회 LLM, plan 2회, empty retry, multi-turn session |
 | **Vision** | plan/respond LLM 입력에 `image_url` 포함, compat에서 strip 없음 |
 | **Agent API** | 기본 SSE (`plan` reasoning + `respond` content); `ADA_AGENT_FORCE_NON_STREAM=1` → buffered |
-| **Stack config** | docker-compose → `:8082`, agent.yaml vision, chat_profile MLX |
+| **Stack config** | docker-compose → `:9082`, agent.yaml vision, chat_profile MLX |
 
 ## CI
 
@@ -50,7 +50,7 @@ GitHub Actions `ada-pytest.yml`:
 
 ## Tier 2 — Eval smoke
 
-Agent API `:8082` + MLX `:8080` 기동 후:
+Agent API `:9082` + MLX `:8080` 기동 후:
 
 ```bash
 ./scripts/verify-regression-eval-smoke.sh

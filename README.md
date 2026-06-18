@@ -28,7 +28,7 @@ MLX가 이미 `:8080`에서 떠 있으면 WebUI만:
 ## 아키텍처
 
 ```
-Browser → Open WebUI (:3000) → LangGraph agent (:8082) → MLX OpenAPI (:8080)
+Browser → Open WebUI (:3000) → LangGraph agent (:9082) → MLX OpenAPI (:8080)
 ```
 
 Python `ada/` 패키지는 Model Registry, vault, Tri-Chat CLI, LangGraph `ada-agent` CLI를 제공합니다. **메인 채팅 UI는 Open WebUI**입니다.
@@ -44,7 +44,8 @@ Python `ada/` 패키지는 Model Registry, vault, Tri-Chat CLI, LangGraph `ada-a
 | 변수 | 기본값 | 설명 |
 |------|--------|------|
 | `ADA_MLX_MODEL` | *(다운로드 시만)* | HF repo id (`download-mlx-model.sh`). 채팅 모델은 서버 `GET /health` → `loaded_model` 또는 UI에서 선택 |
-| `ADA_MLX_PORT` | `8080` | MLX API 포트 |
+| `ADA_MLX_PORT` | `8080` | MLX API 포트 (호스트 `8080–8090`은 MLX 전용) |
+| `ADA_AGENT_PORT` | `9082` | LangGraph Agent API 포트 |
 | `ADA_OPEN_WEBUI_PORT` | `3000` | Open WebUI 포트 |
 
 ## 문서

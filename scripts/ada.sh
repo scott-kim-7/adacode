@@ -10,7 +10,7 @@ source "$ROOT/scripts/ada/prompt_secrets.sh"
 
 HOST="$(ada_mlx_host)"
 MLX_PORT="$(ada_mlx_port)"
-AGENT_PORT="${ADA_AGENT_PORT:-8082}"
+AGENT_PORT="${ADA_AGENT_PORT:-9082}"
 WEBUI_PORT="${ADA_OPEN_WEBUI_PORT:-3000}"
 CONTAINER="${ADA_OPEN_WEBUI_CONTAINER:-adacode-open-webui}"
 COMPOSE_FILE="$ROOT/web/docker-compose.yml"
@@ -33,7 +33,7 @@ Prerequisite:
 
 Environment (optional):
   ADA_MLX_PORT               MLX OpenAI API port (default: 8080)
-  ADA_AGENT_PORT             LangGraph OpenAI API port (default: 8082)
+  ADA_AGENT_PORT             LangGraph OpenAI API port (default: 9082)
   ADA_OPEN_WEBUI_PORT        Browser UI port (default: 3000)
 
 Ada Email / vault (start/restart):

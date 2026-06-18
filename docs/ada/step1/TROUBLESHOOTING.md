@@ -83,7 +83,7 @@ adacode fork에서는 **항상 허용** (`return true`).
 ./scripts/verify-step1-vision.sh
 ```
 
-**Open WebUI (현재):** `./scripts/verify-agent-vision.sh` — agent API(:8082) multimodal smoke test.
+**Open WebUI (현재):** `./scripts/verify-agent-vision.sh` — agent API(:9082) multimodal smoke test.
 
 ## 이미지 첨부 후 응답이 비어 있거나 오래 걸림
 

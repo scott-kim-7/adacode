@@ -69,7 +69,7 @@ ada_require_mlx_up() {
 ada_default_model_id() {
 	local host agent_port
 	host="$(ada_mlx_host)"
-	agent_port="${ADA_AGENT_PORT:-8082}"
+	agent_port="${ADA_AGENT_PORT:-9082}"
 	if ada_mlx_curl_ok "$(ada_mlx_url)/health"; then
 		local loaded
 		loaded="$(curl -sf "$(ada_mlx_url)/health" | python3 -c "import json,sys; print(json.load(sys.stdin).get('loaded_model') or '')" 2>/dev/null || true)"
@@ -132,7 +132,7 @@ ada_sync_model_on_restart() {
 	root="$(ada_repo_root)"
 	container="${ADA_OPEN_WEBUI_CONTAINER:-adacode-open-webui}"
 	port="${ADA_OPEN_WEBUI_PORT:-3000}"
-	agent_port="${ADA_AGENT_PORT:-8082}"
+	agent_port="${ADA_AGENT_PORT:-9082}"
 	compose="$root/web/docker-compose.yml"
 
 	model="$(ada_default_model_id || true)"

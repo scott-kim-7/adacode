@@ -22,7 +22,7 @@ jobs:
         run: pytest ada/tests/regression/eval/test_eval_harness.py -m eval_smoke -q
       - name: Note
         run: |
-          echo "Live eval smoke requires local Agent :8082 + MLX :8080."
+          echo "Live eval smoke requires local Agent :9082 + MLX :8080."
           echo "Run ./scripts/verify-regression-eval-smoke.sh on a Mac with the stack up."
 
   swe-smoke:

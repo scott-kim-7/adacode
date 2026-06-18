@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Start Ada LangGraph agent API (8082) if MLX (8080) is up.
+# Start Ada LangGraph agent API (9082) if MLX (8080) is up.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -8,7 +8,7 @@ source "$ROOT/scripts/ada/mlx_defaults.sh"
 
 MLX_HOST="${ADA_MLX_HOST:-127.0.0.1}"
 MLX_PORT="${ADA_MLX_PORT:-8080}"
-AGENT_PORT="${ADA_AGENT_PORT:-8082}"
+AGENT_PORT="${ADA_AGENT_PORT:-9082}"
 WEBUI_PORT="${ADA_OPEN_WEBUI_PORT:-3000}"
 PID_FILE="${ADA_AGENT_PID:-$ROOT/.ada-agent-server.pid}"
 LOG="${ADA_AGENT_LOG:-$ROOT/.ada-agent-server.log}"
@@ -76,6 +76,38 @@ agent_ready_ok() {
 	agent_up && agent_models_ok
 }
 
+ada_assert_agent_port_allowed() {
+	if [[ "$AGENT_PORT" -ge 8080 && "$AGENT_PORT" -le 8090 ]]; then
+		echo "ERROR: ADA_AGENT_PORT=${AGENT_PORT} is in the MLX reserved range 8080-8090." >&2
+		echo "Use 9082 (default) or another port outside that range." >&2
+		exit 1
+	fi
+}
+
+ada_health_is_ada_agent() {
+	local body
+	body="$(curl -sf "http://${MLX_HOST}:${AGENT_PORT}/health" 2>/dev/null || true)"
+	[[ "$body" == *'"email_vault"'* || "$body" == *'"endpoint"'* ]]
+}
+
+ada_assert_port_not_foreign() {
+	if ! lsof -nP -iTCP:"${AGENT_PORT}" -sTCP:LISTEN >/dev/null 2>&1; then
+		return 0
+	fi
+	if ada_health_is_ada_agent; then
+		return 0
+	fi
+	local body
+	body="$(curl -sf "http://${MLX_HOST}:${AGENT_PORT}/health" 2>/dev/null || true)"
+	if [[ -n "$body" ]]; then
+		echo "ERROR: Port ${AGENT_PORT} is in use by a non-Ada process (likely MLX on the Agent port)." >&2
+		echo "Stop it or set ADA_AGENT_PORT outside 8080-8090 (default 9082)." >&2
+		exit 1
+	fi
+	echo "ERROR: Port ${AGENT_PORT} is already in use." >&2
+	exit 1
+}
+
 stop_agent() {
 	if [[ -f "$PID_FILE" ]]; then
 		ppid="$(cat "$PID_FILE" 2>/dev/null || true)"
@@ -89,6 +121,8 @@ if ! ada_mlx_up; then
 	echo "WARNING: MLX not running at http://${MLX_HOST}:${MLX_PORT} — starting agent anyway" >&2
 fi
 
+ada_assert_agent_port_allowed
+
 if [[ "$FORCE" -eq 0 ]] && agent_ready_ok; then
 	echo "Ada agent server already running at http://${MLX_HOST}:${AGENT_PORT}/v1"
 	exit 0
@@ -100,6 +134,8 @@ fi
 
 stop_agent
 sleep 1
+
+ada_assert_port_not_foreign
 
 if [[ ! -d "$VENV" ]]; then
 	"$ROOT/scripts/install-step2.sh"
