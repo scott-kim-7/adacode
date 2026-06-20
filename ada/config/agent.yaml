@@ -42,3 +42,16 @@ stream:
   inline_thinking: true
   expose_graph_trace: true   # [route] / [verify] trace inside thinking block
   trace_direct_route: true   # show [route] direct for short messages
+
+# chat / task LLM endpoints (D12 defaults — Admin UI can override)
+models:
+  chat:
+    base_url: http://127.0.0.1:8089/v1
+    model_id: mlx-coder
+    api_key: local
+  task:
+    base_url: http://127.0.0.1:8089/v1
+    model_id: mlx-coder
+    api_key: local
+    max_tokens: 512
+  tool: chat

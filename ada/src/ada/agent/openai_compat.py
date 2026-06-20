@@ -283,3 +283,111 @@ def run_tool_chat_completion(
 		auto_execute=auto_execute,
 	)
 	return assistant, finish_reason
+
+
+def _unified_initial_state(
+	messages: list[dict[str, Any]],
+	metadata: dict[str, Any],
+	*,
+	use_tool_branch: bool,
+	openai_tools: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+	history, _user = split_history_and_user(messages)
+	if not history:
+		history = openai_messages_to_langchain(messages)
+	return {
+		"messages": history,
+		"metadata": metadata,
+		"memory_context": "",
+		"search_items": [],
+		"retrieve_sources": [],
+		"openai_tools": list(openai_tools or []),
+		"openai_messages": list(messages),
+		"use_tool_branch": use_tool_branch,
+		"tool_rounds": 0,
+		"tool_done": False,
+		"empty_retries": 0,
+	}
+
+
+def run_unified_chat_completion(
+	messages: list[dict[str, Any]],
+	metadata: dict[str, Any],
+	chat_llm_callable: Callable[[list[BaseMessage]], str],
+	tool_llm_callable: Callable[..., Any],
+	config: AgentConfig | None = None,
+	stream_context: StreamContext | None = None,
+	vault_session: Any | None = None,
+	*,
+	openai_tools: list[dict[str, Any]] | None = None,
+) -> str | tuple[dict[str, Any], str]:
+	from ada.agent.tool_policy import is_native_tool_request
+	from ada.agent.unified_graph import build_unified_chat_graph
+	from langchain_core.messages import AIMessage
+
+	cfg = config or load_agent_config()
+	tools = openai_tools or []
+	use_tool_branch = is_native_tool_request(metadata, tools)
+	compiled = build_unified_chat_graph(
+		chat_llm_callable,
+		tool_llm_callable,
+		config=cfg,
+		stream_context=stream_context,
+		vault_session=vault_session,
+	)
+	result = compiled.invoke(
+		_unified_initial_state(
+			messages,
+			metadata,
+			use_tool_branch=use_tool_branch,
+			openai_tools=tools if use_tool_branch else None,
+		)
+	)
+	if use_tool_branch:
+		assistant = result.get("tool_assistant") or {"role": "assistant", "content": ""}
+		finish = str(result.get("tool_finish_reason") or "stop")
+		if assistant.get("tool_calls"):
+			return assistant, finish
+		content = assistant.get("content")
+		return content if isinstance(content, str) else str(content or "")
+
+	final_messages = result.get("messages") or []
+	for message in reversed(final_messages):
+		if isinstance(message, AIMessage):
+			content = message.content
+			return content if isinstance(content, str) else str(content)
+	return ""
+
+
+def run_unified_chat_completion_streaming(
+	messages: list[dict[str, Any]],
+	metadata: dict[str, Any],
+	chat_llm_callable: Callable[[list[BaseMessage]], str],
+	tool_llm_callable: Callable[..., Any],
+	stream_sink: StreamSink,
+	config: AgentConfig | None = None,
+	stream_context: StreamContext | None = None,
+	vault_session: Any | None = None,
+	*,
+	openai_tools: list[dict[str, Any]] | None = None,
+) -> str:
+	try:
+		result = run_unified_chat_completion(
+			messages,
+			metadata,
+			chat_llm_callable,
+			tool_llm_callable,
+			config=config,
+			stream_context=stream_context,
+			vault_session=vault_session,
+			openai_tools=openai_tools,
+		)
+	except BaseException as exc:
+		stream_sink.finish(error=exc)
+		raise
+	stream_sink.finish()
+	if isinstance(result, tuple):
+		assistant = result[0]
+		content = assistant.get("content")
+		return content if isinstance(content, str) else str(content or "")
+	return result

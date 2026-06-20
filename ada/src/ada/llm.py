@@ -52,10 +52,20 @@ class LLMClient:
 
 	def _model(self) -> str:
 		if self._model_id is None:
-			from ada.openai_models import effective_model_id
+			if self.profile.model_id:
+				self._model_id = self.profile.model_id
+			else:
+				from ada.openai_models import effective_model_id
 
-			self._model_id = effective_model_id(self.profile.base_url, None, api_key=self.api_key)
+				self._model_id = effective_model_id(
+					self.profile.base_url, None, api_key=self.api_key
+				)
 		return self._model_id
+
+	def _default_max_tokens(self, max_tokens: int) -> int:
+		if self.profile.max_tokens is not None:
+			return self.profile.max_tokens
+		return max_tokens
 
 	def _serialize_message(self, message: ChatMessage) -> dict[str, Any]:
 		payload: dict[str, Any] = {"role": message.role}
@@ -77,6 +87,7 @@ class LLMClient:
 		tool_choice: str | dict[str, Any] | None = None,
 		max_tokens: int = 1024,
 	) -> ChatCompletionResult:
+		max_tokens = self._default_max_tokens(max_tokens)
 		payload_messages = [self._serialize_message(m) for m in messages]
 		url = f"{self.profile.base_url.rstrip('/')}/chat/completions"
 		headers = {
@@ -109,7 +120,7 @@ class LLMClient:
 		)
 
 	def chat(self, messages: list[ChatMessage], max_tokens: int = 1024) -> str:
-		result = self.chat_completion(messages, max_tokens=max_tokens)
+		result = self.chat_completion(messages, max_tokens=self._default_max_tokens(max_tokens))
 		return result.content or ""
 
 	def chat_completion_stream(
@@ -119,6 +130,7 @@ class LLMClient:
 		on_delta: Callable[[str], None],
 		max_tokens: int = 1024,
 	) -> ChatCompletionResult:
+		max_tokens = self._default_max_tokens(max_tokens)
 		payload_messages = [self._serialize_message(m) for m in messages]
 		url = f"{self.profile.base_url.rstrip('/')}/chat/completions"
 		headers = {

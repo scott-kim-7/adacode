@@ -24,13 +24,13 @@ def test_regression_chat_completion_response_openai_shape():
 def test_regression_stream_true_returns_buffered_json_not_sse():
 	app = create_app()
 
-	def fake_run(_messages, _llm, config=None, stream_context=None):
+	def fake_run(*_args, **_kwargs):
 		return "buffered"
 
 	with (
 		patch("ada.agent.server.FORCE_NON_STREAM", True),
 		patch("ada.agent.server.effective_model_id", return_value="test-model"),
-		patch("ada.agent.server.run_chat_completion", side_effect=fake_run),
+		patch("ada.agent.server.run_unified_chat_completion", side_effect=fake_run),
 	):
 		client = TestClient(app)
 		resp = client.post(
@@ -52,7 +52,8 @@ def test_regression_stream_true_returns_buffered_json_not_sse():
 def test_regression_stream_true_returns_sse_by_default():
 	app = create_app()
 
-	def fake_streaming(messages, llm_callable, stream_sink, config=None, stream_context=None):
+	def fake_streaming(*args, **kwargs):
+		stream_sink = args[4] if len(args) > 4 else kwargs.get("stream_sink")
 		stream_sink.push("tok")
 		stream_sink.finish()
 		return "tok"
@@ -60,7 +61,7 @@ def test_regression_stream_true_returns_sse_by_default():
 	with (
 		patch.dict(os.environ, {"ADA_AGENT_FORCE_NON_STREAM": "0"}, clear=False),
 		patch("ada.agent.server.effective_model_id", return_value="test-model"),
-		patch("ada.agent.server.run_chat_completion_streaming", side_effect=fake_streaming),
+		patch("ada.agent.server.run_unified_chat_completion_streaming", side_effect=fake_streaming),
 	):
 		client = TestClient(app)
 		with client.stream(
@@ -99,12 +100,12 @@ def test_regression_models_errors_when_mlx_unreachable():
 def test_regression_text_chat_end_to_end_mocked():
 	captured: list = []
 
-	def fake_run(messages, _llm, config=None):
+	def fake_run(messages, *_args, **_kwargs):
 		captured.append(messages)
 		return "assistant-reply"
 
 	app = create_app()
-	with patch("ada.agent.server.run_chat_completion", side_effect=fake_run):
+	with patch("ada.agent.server.run_unified_chat_completion", side_effect=fake_run):
 		client = TestClient(app)
 		resp = client.post(
 			"/v1/chat/completions",
@@ -122,12 +123,12 @@ def test_regression_text_chat_end_to_end_mocked():
 def test_regression_multimodal_chat_end_to_end_mocked():
 	captured: list = []
 
-	def fake_run(messages, _llm, config=None):
+	def fake_run(messages, *_args, **_kwargs):
 		captured.append(messages)
 		return "vision-reply"
 
 	app = create_app()
-	with patch("ada.agent.server.run_chat_completion", side_effect=fake_run):
+	with patch("ada.agent.server.run_unified_chat_completion", side_effect=fake_run):
 		client = TestClient(app)
 		resp = client.post(
 			"/v1/chat/completions",
@@ -145,7 +146,7 @@ def test_regression_multimodal_chat_end_to_end_mocked():
 def test_regression_image_only_not_rejected():
 	app = create_app()
 
-	with patch("ada.agent.server.run_chat_completion", return_value="ok"):
+	with patch("ada.agent.server.run_unified_chat_completion", return_value="ok"):
 		client = TestClient(app)
 		resp = client.post(
 			"/v1/chat/completions",

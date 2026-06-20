@@ -27,10 +27,19 @@ def test_stack_reachable_or_skip():
 def test_server_accepts_tools_field():
 	app = create_app()
 
-	def fake_tool_run(messages, tools, tool_llm, config=None, tool_choice=None):
-		return {"role": "assistant", "content": "ok"}, "stop"
+	def fake_unified(
+		messages,
+		metadata,
+		chat_llm,
+		tool_llm,
+		config=None,
+		stream_context=None,
+		vault_session=None,
+		openai_tools=None,
+	):
+		return "ok"
 
-	with patch("ada.agent.server.run_tool_chat_completion", side_effect=fake_tool_run):
+	with patch("ada.agent.server.run_unified_chat_completion", side_effect=fake_unified):
 		client = TestClient(app)
 		resp = client.post(
 			"/v1/chat/completions",

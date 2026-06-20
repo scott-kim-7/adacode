@@ -242,7 +242,7 @@ def test_sse_delta_fields_for_channels():
 
 
 def test_stream_true_returns_sse_by_default():
-	def fake_streaming(messages, llm_callable, stream_sink, config=None, stream_context=None):
+	def fake_streaming(messages, metadata, chat_llm, tool_llm, stream_sink, config=None, stream_context=None, vault_session=None, openai_tools=None):
 		stream_sink.push("hi")
 		stream_sink.finish()
 		return "hi"
@@ -251,7 +251,7 @@ def test_stream_true_returns_sse_by_default():
 	with (
 		patch("ada.agent.server.FORCE_NON_STREAM", False),
 		patch("ada.agent.server.effective_model_id", return_value="test-model"),
-		patch("ada.agent.server.run_chat_completion_streaming", side_effect=fake_streaming),
+		patch("ada.agent.server.run_unified_chat_completion_streaming", side_effect=fake_streaming),
 	):
 		client = TestClient(app)
 		with client.stream(
@@ -271,7 +271,7 @@ def test_stream_true_returns_sse_by_default():
 
 
 def test_stream_error_finishes_sse_with_done():
-	def fake_streaming(messages, llm_callable, stream_sink, config=None, stream_context=None):
+	def fake_streaming(messages, metadata, chat_llm, tool_llm, stream_sink, config=None, stream_context=None, vault_session=None, openai_tools=None):
 		stream_sink.push("partial")
 		stream_sink.finish(error=RuntimeError("LLM failed"))
 		raise RuntimeError("LLM failed")
@@ -280,7 +280,7 @@ def test_stream_error_finishes_sse_with_done():
 	with (
 		patch("ada.agent.server.FORCE_NON_STREAM", False),
 		patch("ada.agent.server.effective_model_id", return_value="test-model"),
-		patch("ada.agent.server.run_chat_completion_streaming", side_effect=fake_streaming),
+		patch("ada.agent.server.run_unified_chat_completion_streaming", side_effect=fake_streaming),
 	):
 		client = TestClient(app)
 		with client.stream(
@@ -301,14 +301,14 @@ def test_stream_error_finishes_sse_with_done():
 
 
 def test_stream_true_buffered_when_force_non_stream_enabled():
-	def fake_run(_messages, _llm, config=None, stream_context=None):
+	def fake_run(_messages, _metadata, _chat_llm, _tool_llm, config=None, stream_context=None, vault_session=None, openai_tools=None):
 		return "buffered"
 
 	app = create_app()
 	with (
 		patch("ada.agent.server.FORCE_NON_STREAM", True),
 		patch("ada.agent.server.effective_model_id", return_value="test-model"),
-		patch("ada.agent.server.run_chat_completion", side_effect=fake_run),
+		patch("ada.agent.server.run_unified_chat_completion", side_effect=fake_run),
 	):
 		client = TestClient(app)
 		resp = client.post(
@@ -326,7 +326,7 @@ def test_stream_true_buffered_when_force_non_stream_enabled():
 
 
 def test_stream_true_include_usage_emits_usage_chunk():
-	def fake_streaming(messages, llm_callable, stream_sink, config=None, stream_context=None):
+	def fake_streaming(messages, metadata, chat_llm, tool_llm, stream_sink, config=None, stream_context=None, vault_session=None, openai_tools=None):
 		stream_sink.push("hi")
 		stream_sink.finish()
 		return "hi"
@@ -335,7 +335,7 @@ def test_stream_true_include_usage_emits_usage_chunk():
 	with (
 		patch("ada.agent.server.FORCE_NON_STREAM", False),
 		patch("ada.agent.server.effective_model_id", return_value="test-model"),
-		patch("ada.agent.server.run_chat_completion_streaming", side_effect=fake_streaming),
+		patch("ada.agent.server.run_unified_chat_completion_streaming", side_effect=fake_streaming),
 	):
 		client = TestClient(app)
 		with client.stream(

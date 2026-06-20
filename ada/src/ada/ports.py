@@ -73,3 +73,7 @@ def agent_base_url(*, host: str | None = None, port: int | None = None) -> str:
 	h = host or agent_host()
 	p = port if port is not None else agent_port()
 	return f"http://{h}:{p}"
+
+
+def owui_base_url() -> str:
+	return os.environ.get("ADA_OWUI_BASE_URL", "http://127.0.0.1:3000").strip().rstrip("/")

@@ -292,3 +292,31 @@ export function emailRawUrl(messageId: string): string {
 export function emailAttachmentUrl(attachmentId: number): string {
 	return `${adaAgentBase()}/email/attachments/${attachmentId}`;
 }
+
+export type AgentModelEndpoint = {
+	base_url: string;
+	model_id: string;
+	api_key?: string;
+	max_tokens?: number;
+};
+
+export type AgentModelsConfig = {
+	chat: AgentModelEndpoint;
+	task: AgentModelEndpoint;
+	tool?: string;
+};
+
+export async function getAgentModels(): Promise<AgentModelsConfig> {
+	return adaFetch('ops/agent/models');
+}
+
+export async function putAgentModels(cfg: AgentModelsConfig): Promise<AgentModelsConfig> {
+	return adaFetch('ops/agent/models', {
+		method: 'PUT',
+		body: JSON.stringify(cfg)
+	});
+}
+
+export async function testAgentModels(profile: 'chat' | 'task'): Promise<unknown> {
+	return adaFetch(`ops/agent/models/test?profile=${encodeURIComponent(profile)}`);
+}

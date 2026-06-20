@@ -11,16 +11,28 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 
+from ada.agent.classify import classify_request, parse_request_metadata
 from ada.agent.config import load_agent_config
-from ada.agent.llm import load_profile_from_env, make_llm_callable, make_tool_llm_callable
+from ada.agent.jwt_context import parse_owui_auth_header, reset_request_jwt, set_request_jwt
+from ada.agent.llm import make_llm_callable
+from ada.agent.llm_registry import (
+	build_llm_registry,
+	models_config_from_api,
+	models_config_to_api,
+	profile_from_endpoint,
+	resolve_task_model_id,
+)
+from ada.agent.models_ops import update_agent_models
 from ada.agent.openai_compat import (
 	build_chat_completion_response,
 	build_tool_chat_completion_response,
 	iter_sse_chat_completion,
-	run_chat_completion,
-	run_chat_completion_streaming,
 	run_tool_chat_completion,
+	run_unified_chat_completion,
+	run_unified_chat_completion_streaming,
 )
+from ada.agent.tool_policy import is_agent_tool_request
+from ada.agent.task_graph import run_task_completion
 from ada.agent.stream_sink import StreamSink
 from ada.email.api import build_email_router
 from ada.email.platform import EmailPlatform
@@ -31,7 +43,7 @@ from ada.openai_models import (
 	loaded_model_from_health,
 	resolve_model_id,
 )
-from ada.vault import VaultError
+from ada.vault import VaultError, VaultSession
 
 from ada.ports import agent_host, agent_port, mlx_upstream_url
 
@@ -51,14 +63,15 @@ CORS_ORIGINS = [
 
 def create_app(email_platform: EmailPlatform | None = None) -> FastAPI:
 	cfg = load_agent_config()
-	profile = load_profile_from_env()
-	llm_callable = make_llm_callable(profile)
-	tool_llm_callable = make_tool_llm_callable(profile)
+	registry = build_llm_registry(cfg)
+	vault_session: VaultSession | None = None
 	if email_platform is not None:
 		platform = email_platform
+		vault_session = platform.vault_tokens._session
 	else:
 		try:
 			platform = EmailPlatform.from_env()
+			vault_session = platform.vault_tokens._session
 		except VaultError:
 			# Test/runtime fallback: keep email features available without forcing vault unlock.
 			platform = EmailPlatform.from_session(None)
@@ -71,6 +84,9 @@ def create_app(email_platform: EmailPlatform | None = None) -> FastAPI:
 		heartbeat_cm.__exit__(None, None, None)
 
 	app = FastAPI(title="Ada LangGraph Agent", version="0.1.0", lifespan=lifespan)
+	app.state.agent_cfg = cfg
+	app.state.llm_registry = registry
+	app.state.vault_session = vault_session
 	if CORS_ORIGINS:
 		app.add_middleware(
 			CORSMiddleware,
@@ -146,6 +162,46 @@ def create_app(email_platform: EmailPlatform | None = None) -> FastAPI:
 			}
 		return payload
 
+	@app.get("/ops/agent/models")
+	async def get_agent_models() -> dict[str, Any]:
+		return models_config_to_api(app.state.agent_cfg.models)
+
+	@app.put("/ops/agent/models")
+	async def put_agent_models(body: dict[str, Any]) -> dict[str, Any]:
+		if not isinstance(body, dict):
+			raise HTTPException(status_code=400, detail="Expected JSON object")
+		try:
+			models = models_config_from_api(body, app.state.agent_cfg.models)
+			cfg = update_agent_models(models)
+		except (TypeError, ValueError) as exc:
+			raise HTTPException(status_code=400, detail=str(exc)) from exc
+		app.state.agent_cfg = cfg
+		app.state.llm_registry = build_llm_registry(cfg)
+		return models_config_to_api(cfg.models)
+
+	@app.get("/ops/agent/models/test")
+	async def test_agent_models(profile: str = "chat") -> dict[str, Any]:
+		cfg = app.state.agent_cfg
+		endpoint = cfg.models.task if profile == "task" else cfg.models.chat
+		url = f"{endpoint.base_url.rstrip('/')}/models"
+		timeout = httpx.Timeout(10.0, connect=5.0)
+		try:
+			async with httpx.AsyncClient(timeout=timeout) as client:
+				resp = await client.get(
+					url,
+					headers={"Authorization": f"Bearer {endpoint.api_key}"},
+				)
+				resp.raise_for_status()
+				data = resp.json()
+		except httpx.HTTPError as exc:
+			raise HTTPException(
+				status_code=502,
+				detail=f"Model endpoint unreachable at {url}: {exc}",
+			) from exc
+		if not isinstance(data, dict):
+			return {"profile": profile, "reachable": True, "models": data}
+		return {"profile": profile, "reachable": True, "models": data}
+
 	@app.post("/v1/chat/completions")
 	async def chat_completions(request: Request) -> Response:
 		try:
@@ -160,8 +216,15 @@ def create_app(email_platform: EmailPlatform | None = None) -> FastAPI:
 		if not isinstance(messages, list) or not messages:
 			raise HTTPException(status_code=400, detail="messages must be a non-empty array")
 
+		cfg = app.state.agent_cfg
+		registry = app.state.llm_registry
+		kind = classify_request(request.headers, payload)
+		metadata = parse_request_metadata(request.headers, payload)
+
+		task_model_id = resolve_task_model_id(cfg)
+		chat_model_id = (cfg.models.chat.model_id or "").strip()
 		try:
-			model = effective_model_id(
+			model = chat_model_id or effective_model_id(
 				f"{MLX_UPSTREAM}/v1",
 				str(payload.get("model") or ""),
 				api_key="local",
@@ -175,14 +238,33 @@ def create_app(email_platform: EmailPlatform | None = None) -> FastAPI:
 
 		tools = payload.get("tools")
 		has_tools = isinstance(tools, list) and len(tools) > 0
+		agent_tools = has_tools and is_agent_tool_request(metadata, tools)
+		if stream_requested and agent_tools:
+			stream_requested = False
+
+		jwt_buf = parse_owui_auth_header(request.headers)
+		jwt_token = set_request_jwt(jwt_buf)
+		vault_session = app.state.vault_session
 
 		try:
-			if has_tools:
+			if kind == "task":
+				if stream_requested:
+					raise HTTPException(status_code=400, detail="Task requests must be non-streaming")
+				content = await asyncio.to_thread(
+					run_task_completion,
+					payload,
+					metadata,
+					registry["task"],
+					cfg,
+				)
+				response_model = task_model_id or model
+				body = build_chat_completion_response(response_model, content)
+			elif has_tools and not agent_tools:
 				assistant, finish_reason = await asyncio.to_thread(
 					run_tool_chat_completion,
 					messages,
 					tools,
-					tool_llm_callable,
+					registry["tool"],
 					cfg,
 					tool_choice=payload.get("tool_choice"),
 				)
@@ -197,7 +279,10 @@ def create_app(email_platform: EmailPlatform | None = None) -> FastAPI:
 					expose_graph_trace=cfg.stream.expose_graph_trace,
 					trace_direct_route=cfg.stream.trace_direct_route,
 				)
-				streaming_llm = make_llm_callable(profile, stream_context=stream_ctx)
+				streaming_llm = make_llm_callable(
+					profile_from_endpoint("chat", cfg.models.chat, tool_calling=True),
+					stream_context=stream_ctx,
+				)
 
 				stream_options = payload.get("stream_options")
 				include_usage = (
@@ -209,12 +294,16 @@ def create_app(email_platform: EmailPlatform | None = None) -> FastAPI:
 					async for chunk in iter_sse_chat_completion(
 						sink,
 						model,
-						run_turn=lambda: run_chat_completion_streaming(
+						run_turn=lambda: run_unified_chat_completion_streaming(
 							messages,
+							metadata,
 							streaming_llm,
+							registry["tool"],
 							sink,
 							cfg,
-							stream_context=stream_ctx,
+							stream_ctx,
+							vault_session,
+							openai_tools=tools if agent_tools else None,
 						),
 						include_usage=include_usage,
 					):
@@ -230,15 +319,25 @@ def create_app(email_platform: EmailPlatform | None = None) -> FastAPI:
 					},
 				)
 			else:
-				content = await asyncio.to_thread(
-					run_chat_completion,
+				result = await asyncio.to_thread(
+					run_unified_chat_completion,
 					messages,
-					llm_callable,
+					metadata,
+					registry["chat"],
+					registry["tool"],
 					cfg,
+					vault_session=vault_session,
+					openai_tools=tools if agent_tools else None,
 				)
-				body = build_chat_completion_response(model, content)
+				if isinstance(result, tuple):
+					assistant, finish_reason = result
+					body = build_tool_chat_completion_response(model, assistant, finish_reason)
+				else:
+					body = build_chat_completion_response(model, result)
 		except Exception as exc:
 			raise HTTPException(status_code=502, detail=f"Agent failed: {exc}") from exc
+		finally:
+			reset_request_jwt(jwt_token)
 
 		return JSONResponse(content=body)
 

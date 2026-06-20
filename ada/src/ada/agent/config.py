@@ -53,6 +53,39 @@ class StreamConfig:
 
 DEFAULT_SYSTEM_PROMPT = "You are Ada, a helpful assistant."
 
+DEFAULT_CHAT_BASE_URL = "http://127.0.0.1:8089/v1"
+DEFAULT_TASK_MODEL_ID = "mlx-coder"
+
+
+@dataclass(frozen=True)
+class ModelEndpointConfig:
+	base_url: str
+	model_id: str = ""
+	api_key: str = "local"
+	max_tokens: int | None = None
+
+
+@dataclass(frozen=True)
+class ModelsConfig:
+	chat: ModelEndpointConfig
+	task: ModelEndpointConfig
+	tool_alias: str = "chat"
+
+
+def default_models_config() -> ModelsConfig:
+	endpoint = ModelEndpointConfig(
+		base_url=DEFAULT_CHAT_BASE_URL,
+		model_id=DEFAULT_TASK_MODEL_ID,
+		api_key="local",
+	)
+	task = ModelEndpointConfig(
+		base_url=DEFAULT_CHAT_BASE_URL,
+		model_id=DEFAULT_TASK_MODEL_ID,
+		api_key="local",
+		max_tokens=512,
+	)
+	return ModelsConfig(chat=endpoint, task=task, tool_alias="chat")
+
 
 @dataclass(frozen=True)
 class AgentConfig:
@@ -64,6 +97,7 @@ class AgentConfig:
 	vision: VisionConfig = field(default_factory=VisionConfig)
 	tools: ToolsConfig = field(default_factory=ToolsConfig)
 	stream: StreamConfig = field(default_factory=StreamConfig)
+	models: ModelsConfig = field(default_factory=default_models_config)
 
 
 def _as_tuple(value: object, default: tuple[str, ...]) -> tuple[str, ...]:
@@ -88,6 +122,27 @@ def load_agent_config(path: Path | None = None) -> AgentConfig:
 	vision_raw = raw.get("vision") or {}
 	tools_raw = raw.get("tools") or {}
 	stream_raw = raw.get("stream") or {}
+	models_raw = raw.get("models") or {}
+
+	def _parse_endpoint(name: str, data: object) -> ModelEndpointConfig:
+		defaults = default_models_config()
+		base = defaults.chat if name == "chat" else defaults.task
+		if not isinstance(data, dict):
+			return base
+		max_tokens_raw = data.get("max_tokens")
+		max_tokens = int(max_tokens_raw) if max_tokens_raw is not None else base.max_tokens
+		return ModelEndpointConfig(
+			base_url=str(data.get("base_url") or base.base_url).rstrip("/"),
+			model_id=str(data.get("model_id") if data.get("model_id") is not None else base.model_id),
+			api_key=str(data.get("api_key") or base.api_key),
+			max_tokens=max_tokens,
+		)
+
+	models = ModelsConfig(
+		chat=_parse_endpoint("chat", models_raw.get("chat")),
+		task=_parse_endpoint("task", models_raw.get("task")),
+		tool_alias=str(models_raw.get("tool") or "chat"),
+	)
 
 	return AgentConfig(
 		system_prompt=str(raw.get("system_prompt") or DEFAULT_SYSTEM_PROMPT).strip(),
@@ -133,4 +188,5 @@ def load_agent_config(path: Path | None = None) -> AgentConfig:
 				)
 			),
 		),
+		models=models,
 	)

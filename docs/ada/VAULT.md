@@ -22,6 +22,22 @@
 | `gmail.oauth.{account_id}` | Gmail refresh/access tokens |
 | `ada.local.api_key` | Email API `X-Ada-Local-Key` (curl/webhook; 브라우저는 WebUI 프록시) |
 | `external.*.api_key` | 외부 LLM API 키 |
+| `exa.api_key` | Agent `search_batch` — Exa web search ([`search/service.py`](../ada/src/ada/search/service.py)) |
+| `context7.api_key` | Agent `search_batch` — Context7 lib/docs search (동일) |
+
+### Web search vault 키 (Phase 2)
+
+`features.web_search` ON 채팅 시 Agent UnifiedGraph `search_batch`가 vault에서 읽는다. 키가 없으면 해당 provider만 skip(채팅은 계속).
+
+```bash
+cd ada
+make vault-set KEY=exa.api_key        # Exa dashboard API key
+make vault-set KEY=context7.api_key   # context7.com API key
+make vault-list
+```
+
+- **금지:** OWUI Admin Exa 키·Docker env·`.env` — vault만 사용 ([`ada-vault-policy`](../../.cursor/rules/ada-vault-policy.mdc))
+- **확인:** `pytest tests/test_web_search.py` (mock); live는 `./scripts/verify-phase2-owui.sh` (스택 + 선택 `OWUI_JWT`)
 
 ## 암호 → 키
 

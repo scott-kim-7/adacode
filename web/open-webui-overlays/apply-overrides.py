@@ -29,13 +29,13 @@ def patch_settings(path: Path) -> None:
         text = replace_once(
             text,
             "import Tools from './Settings/Tools.svelte';",
-            "import Tools from './Settings/Tools.svelte';\n\timport AdaEmail from './Settings/AdaEmail.svelte';",
+            "import Tools from './Settings/Tools.svelte';\n\timport AdaEmail from './Settings/AdaEmail.svelte';\n\timport AdaAgentModels from './Settings/AdaAgentModels.svelte';",
             label="settings-import",
         )
         text = replace_once(
             text,
             "\t\t\t'db'\n\t\t].includes(tabFromPath)",
-            "\t\t\t'db',\n\t\t\t'ada-email'\n\t\t].includes(tabFromPath)",
+            "\t\t\t'db',\n\t\t\t'ada-email',\n\t\t\t'ada-agent'\n\t\t].includes(tabFromPath)",
             label="settings-tab-list",
         )
         tab_button = """
@@ -59,15 +59,82 @@ def patch_settings(path: Path) -> None:
 \t\t</button>
 
 \t\t<button
+\t\t\tid="ada-agent"
+\t\t\tclass="px-0.5 py-1 min-w-fit rounded-lg flex-1 md:flex-none flex text-left transition {selectedTab ===
+\t\t\t'ada-agent'
+\t\t\t\t? ''
+\t\t\t\t: ' text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-white'}"
+\t\t\ton:click={() => {
+\t\t\t\tgoto('/admin/settings/ada-agent');
+\t\t\t}}
+\t\t>
+\t\t\t<div class=" self-center mr-2">
+\t\t\t\t<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+\t\t\t\t\t<path fill-rule="evenodd" d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z" clip-rule="evenodd" />
+\t\t\t\t</svg>
+\t\t\t</div>
+\t\t\t<div class=" self-center">{$i18n.t('Ada Agent Models')}</div>
+\t\t</button>
+
+\t\t<button
 \t\t\tid="db"
 """
         text = replace_once(text, '\t\t<button\n\t\t\tid="db"', tab_button, label="settings-tab-button")
         text = replace_once(
             text,
             "\t\t{:else if selectedTab === 'pipelines'}",
-            "\t\t{:else if selectedTab === 'ada-email'}\n\t\t\t<AdaEmail />\n\t\t{:else if selectedTab === 'pipelines'}",
+            "\t\t{:else if selectedTab === 'ada-email'}\n\t\t\t<AdaEmail />\n\t\t{:else if selectedTab === 'ada-agent'}\n\t\t\t<AdaAgentModels />\n\t\t{:else if selectedTab === 'pipelines'}",
             label="settings-tab-content",
         )
+        path.write_text(text)
+    elif "AdaAgentModels" not in text:
+        text = replace_once(
+            text,
+            "import AdaEmail from './Settings/AdaEmail.svelte';",
+            "import AdaEmail from './Settings/AdaEmail.svelte';\n\timport AdaAgentModels from './Settings/AdaAgentModels.svelte';",
+            label="settings-import-agent-models",
+        )
+        if "'ada-agent'" not in text:
+            text = replace_once(
+                text,
+                "\t\t\t'ada-email'\n\t\t].includes(tabFromPath)",
+                "\t\t\t'ada-email',\n\t\t\t'ada-agent'\n\t\t].includes(tabFromPath)",
+                label="settings-tab-list-agent",
+            )
+        if "id=\"ada-agent\"" not in text:
+            agent_tab = """
+\t\t<button
+\t\t\tid="ada-agent"
+\t\t\tclass="px-0.5 py-1 min-w-fit rounded-lg flex-1 md:flex-none flex text-left transition {selectedTab ===
+\t\t\t'ada-agent'
+\t\t\t\t? ''
+\t\t\t\t: ' text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-white'}"
+\t\t\ton:click={() => {
+\t\t\t\tgoto('/admin/settings/ada-agent');
+\t\t\t}}
+\t\t>
+\t\t\t<div class=" self-center mr-2">
+\t\t\t\t<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+\t\t\t\t\t<path fill-rule="evenodd" d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z" clip-rule="evenodd" />
+\t\t\t\t</svg>
+\t\t\t</div>
+\t\t\t<div class=" self-center">{$i18n.t('Ada Agent Models')}</div>
+\t\t</button>
+
+"""
+            text = replace_once(
+                text,
+                "\t\t\t<div class=\" self-center\">{$i18n.t('Ada Email')}</div>\n\t\t</button>\n\n\t\t<button\n\t\t\tid=\"db\"",
+                "\t\t\t<div class=\" self-center\">{$i18n.t('Ada Email')}</div>\n\t\t</button>\n" + agent_tab + "\t\t<button\n\t\t\tid=\"db\"",
+                label="settings-tab-button-agent",
+            )
+        if "selectedTab === 'ada-agent'" not in text:
+            text = replace_once(
+                text,
+                "\t\t{:else if selectedTab === 'ada-email'}\n\t\t\t<AdaEmail />\n\t\t{:else if selectedTab === 'pipelines'}",
+                "\t\t{:else if selectedTab === 'ada-email'}\n\t\t\t<AdaEmail />\n\t\t{:else if selectedTab === 'ada-agent'}\n\t\t\t<AdaAgentModels />\n\t\t{:else if selectedTab === 'pipelines'}",
+                label="settings-tab-content-agent",
+            )
         path.write_text(text)
 
 
@@ -252,23 +319,167 @@ def patch_chat(path: Path) -> None:
         path.write_text(text)
 
 
+def patch_openai(path: Path) -> None:
+	text = path.read_text()
+	marker = "    headers, cookies = await get_headers_and_cookies(\n        request, url, key, api_config, metadata, user=user\n    )\n"
+	phase2_block = """
+    # Ada Agent forwarding (Phase 2)
+    import json as _json
+    _ada_meta = metadata if isinstance(metadata, dict) else {}
+    headers["X-Ada-Request-Kind"] = "task" if _ada_meta.get("task") else "chat"
+    _ada_allow = (
+        "features", "files", "chat_id", "message_id",
+        "tool_ids", "tool_servers", "collection_names",
+        "task", "task_body", "filter_ids",
+    )
+    _ada_filtered = {k: _ada_meta[k] for k in _ada_allow if k in _ada_meta}
+    if _ada_filtered:
+        headers["X-OpenWebUI-Metadata"] = _json.dumps(_ada_filtered, ensure_ascii=False)[:65536]
+    if headers.get("Authorization"):
+        headers["X-Ada-Owui-Authorization"] = headers["Authorization"]
+
+"""
+	if "X-Ada-Request-Kind" in text and "features" in text and '_ada_allow = (' in text:
+		return
+	if "X-Ada-Request-Kind" in text:
+		# Upgrade Phase 1 patch to Phase 2 allowlist
+		start = text.find("    # Ada Agent forwarding")
+		end = text.find("\n\n", start)
+		if start != -1 and end != -1:
+			text = text[:start] + phase2_block.strip() + "\n" + text[end + 2 :]
+			path.write_text(text)
+		return
+	insert = marker + phase2_block
+	text = replace_once(text, marker, insert, label="openai-ada-headers")
+	path.write_text(text)
+
+
+def patch_middleware_features(path: Path) -> None:
+	text = path.read_text()
+	if "Ada Phase 2 — preserve features" in text:
+		return
+	anchor = "    metadata = {\n        **metadata,\n        \"tool_ids\": tool_ids,\n        \"files\": files,\n    }"
+	insert = """    # Ada Phase 2 — preserve features for Agent metadata header
+    if features:
+        metadata = {**metadata, "features": features}
+
+""" + anchor
+	text = replace_once(text, anchor, insert, label="middleware-features")
+	path.write_text(text)
+
+
+def patch_middleware_agent_handles_context(path: Path) -> None:
+	text = path.read_text()
+	if "_ada_agent_handles_context" in text:
+		return
+
+	log_anchor = "log = logging.getLogger(__name__)\n"
+	helper = log_anchor + """
+
+def _ada_agent_handles_context() -> bool:
+    return os.environ.get("ADA_AGENT_HANDLES_CONTEXT", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+
+
+"""
+	text = replace_once(text, log_anchor, helper, label="middleware-ada-helper")
+
+	memory_old = (
+		'        if "memory" in features and features["memory"]:\n'
+		"            form_data = await chat_memory_handler("
+	)
+	memory_new = (
+		'        if "memory" in features and features["memory"] and not _ada_agent_handles_context():\n'
+		"            form_data = await chat_memory_handler("
+	)
+	text = replace_once(text, memory_old, memory_new, label="middleware-skip-memory")
+
+	web_old = (
+		'        if "web_search" in features and features["web_search"]:\n'
+		"            form_data = await chat_web_search_handler("
+	)
+	web_new = (
+		'        if "web_search" in features and features["web_search"] and not _ada_agent_handles_context():\n'
+		"            form_data = await chat_web_search_handler("
+	)
+	text = replace_once(text, web_old, web_new, label="middleware-skip-web")
+
+	files_old = """    try:
+        form_data, flags = await chat_completion_files_handler(
+            request, form_data, extra_params, user
+        )
+        sources.extend(flags.get("sources", []))
+    except Exception as e:
+        log.exception(e)
+
+    # If context is not empty, insert it into the messages
+    if len(sources) > 0:"""
+
+	files_new = """    if not _ada_agent_handles_context():
+        try:
+            form_data, flags = await chat_completion_files_handler(
+                request, form_data, extra_params, user
+            )
+            sources.extend(flags.get("sources", []))
+        except Exception as e:
+            log.exception(e)
+
+    # If context is not empty, insert it into the messages
+    if len(sources) > 0 and not _ada_agent_handles_context():"""
+
+	text = replace_once(text, files_old, files_new, label="middleware-skip-files")
+
+	tool_anchor = "                tool_call_retries = 0\n\n                while ("
+	tool_insert = """                tool_call_retries = 0
+
+                if _ada_agent_handles_context() and metadata.get("params", {}).get(
+                    "function_calling"
+                ) == "native" and not metadata.get("tool_servers"):
+                    tool_calls.clear()
+
+                while ("""
+	text = replace_once(text, tool_anchor, tool_insert, label="middleware-skip-agent-tools")
+	path.write_text(text)
+
+
+def patch_middleware_mcp_tool_skip(path: Path) -> None:
+	text = path.read_text()
+	old = """                if _ada_agent_handles_context() and metadata.get("params", {}).get(
+                    "function_calling"
+                ) == "native" and not metadata.get("tool_servers") and not any(
+                    str(tid).startswith("server:mcp:")
+                    for tid in (metadata.get("tool_ids") or [])
+                ):
+                    tool_calls.clear()"""
+	new = """                if _ada_agent_handles_context() and metadata.get("params", {}).get(
+                    "function_calling"
+                ) == "native" and not metadata.get("tool_servers"):
+                    tool_calls.clear()"""
+	if old in text:
+		text = text.replace(old, new)
+		path.write_text(text)
+
+
 def patch_main(path: Path) -> None:
-    text = path.read_text()
-    if "\n    ada,\n" not in text:
-        text = replace_once(
-            text,
-            "    utils,\n    scim,\n)",
-            "    utils,\n    scim,\n    ada,\n)",
-            label="main-import-ada",
-        )
-    if 'prefix="/api/v1/ada"' not in text:
-        text = replace_once(
-            text,
-            'app.include_router(configs.router, prefix="/api/v1/configs", tags=["configs"])',
-            'app.include_router(configs.router, prefix="/api/v1/configs", tags=["configs"])\n\napp.include_router(ada.router, prefix="/api/v1/ada", tags=["ada"])',
-            label="main-router-ada",
-        )
-    path.write_text(text)
+	text = path.read_text()
+	if "\n    ada,\n" not in text:
+		text = replace_once(
+			text,
+			"    utils,\n    scim,\n)",
+			"    utils,\n    scim,\n    ada,\n)",
+			label="main-import-ada",
+		)
+	if 'prefix="/api/v1/ada"' not in text:
+		text = replace_once(
+			text,
+			'app.include_router(configs.router, prefix="/api/v1/configs", tags=["configs"])',
+			'app.include_router(configs.router, prefix="/api/v1/configs", tags=["configs"])\n\napp.include_router(ada.router, prefix="/api/v1/ada", tags=["ada"])',
+			label="main-router-ada",
+		)
+	path.write_text(text)
 
 
 def copy_backend_overlay(root: Path, overlay: Path) -> None:
@@ -329,6 +540,10 @@ def main() -> None:
     patch_chat_controls(root / "src/lib/components/chat/ChatControls.svelte")
     patch_chat(root / "src/lib/components/chat/Chat.svelte")
     patch_dockerfile(root / "Dockerfile")
+    patch_openai(root / "backend/open_webui/routers/openai.py")
+    patch_middleware_features(root / "backend/open_webui/utils/middleware.py")
+    patch_middleware_agent_handles_context(root / "backend/open_webui/utils/middleware.py")
+    patch_middleware_mcp_tool_skip(root / "backend/open_webui/utils/middleware.py")
     copy_backend_overlay(root, overlay)
     patch_main(root / "backend/open_webui/main.py")
     merge_i18n(

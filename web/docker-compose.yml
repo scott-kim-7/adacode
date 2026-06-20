@@ -27,6 +27,8 @@ services:
       # Keep login sessions across container recreate/restart (empty = new key each time → 401 toast)
       WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY:-adacode-local-webui-secret}
       ADA_AGENT_BASE_URL: ${ADA_AGENT_BASE_URL:-http://host.docker.internal:9082}
+      # Phase 3: skip OWUI preprocess when Agent UnifiedGraph handles context
+      ADA_AGENT_HANDLES_CONTEXT: ${ADA_AGENT_HANDLES_CONTEXT:-1}
     volumes:
       - open-webui:/app/backend/data
     extra_hosts:

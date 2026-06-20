@@ -8,7 +8,15 @@ profiles:
     base_url: http://127.0.0.1:8089/v1
     api_key: local
     tool_calling: true
-    notes: Model id resolved at runtime via /v1/models on base_url.
+    notes: Model id from agent.yaml models.chat (default mlx-coder).
+
+  task_profile:
+    label: Task LLM (OpenAPI)
+    provider: openai-compatible
+    base_url: http://127.0.0.1:8089/v1
+    api_key: local
+    tool_calling: false
+    notes: Model id from agent.yaml models.task (default mlx-coder).
 
   external_profile:
     label: External API LLM

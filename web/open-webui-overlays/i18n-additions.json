@@ -93,5 +93,17 @@
 	"Summary": "Summary",
 	"Mark all as read": "Mark all as read",
 	"Marked {{count}} as read": "Marked {{count}} as read",
-	"No unread summaries": "No unread summaries"
+	"No unread summaries": "No unread summaries",
+	"Ada Agent Models": "Ada Agent Models",
+	"Chat and task LLM endpoints (saved to Agent agent.yaml via admin proxy).": "Chat and task LLM endpoints (saved to Agent agent.yaml via admin proxy).",
+	"Chat model (heavy)": "Chat model (heavy)",
+	"Task model (light)": "Task model (light)",
+	"Base URL": "Base URL",
+	"Model id": "Model id",
+	"Max tokens": "Max tokens",
+	"Save models": "Save models",
+	"Agent models saved": "Agent models saved",
+	"Connection OK": "Connection OK",
+	"Saving...": "Saving...",
+	"Testing...": "Testing..."
 }
