@@ -7,6 +7,7 @@ from ada.agent.config import AgentConfig, ModelEndpointConfig, ModelsConfig
 from ada.agent.llm import make_llm_callable, make_tool_llm_callable
 from ada.agent.stream_sink import StreamContext
 from ada.llm import ChatCompletionResult
+from ada.openai_models import effective_model_id
 from ada.registry import Profile
 from ada.vault import VaultSession
 
@@ -50,6 +51,27 @@ def build_llm_registry(
 def resolve_task_model_id(cfg: AgentConfig) -> str:
 	model_id = (cfg.models.task.model_id or "").strip()
 	return model_id or "mlx-coder"
+
+
+def _effective_model_for_endpoint(
+	endpoint: ModelEndpointConfig,
+	requested: str | None = None,
+) -> str:
+	preferred = (endpoint.model_id or "").strip() or None
+	fallback = (requested or "").strip() or None
+	return effective_model_id(
+		endpoint.base_url.rstrip("/"),
+		preferred or fallback,
+		api_key=endpoint.api_key or "local",
+	)
+
+
+def resolve_effective_chat_model_id(cfg: AgentConfig, *, requested: str = "") -> str:
+	return _effective_model_for_endpoint(cfg.models.chat, requested=requested)
+
+
+def resolve_effective_task_model_id(cfg: AgentConfig) -> str:
+	return _effective_model_for_endpoint(cfg.models.task)
 
 
 def models_config_to_api(cfg: ModelsConfig) -> dict[str, Any]:

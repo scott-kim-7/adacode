@@ -52,14 +52,12 @@ class LLMClient:
 
 	def _model(self) -> str:
 		if self._model_id is None:
-			if self.profile.model_id:
-				self._model_id = self.profile.model_id
-			else:
-				from ada.openai_models import effective_model_id
+			from ada.openai_models import effective_model_id
 
-				self._model_id = effective_model_id(
-					self.profile.base_url, None, api_key=self.api_key
-				)
+			preferred = (self.profile.model_id or "").strip() or None
+			self._model_id = effective_model_id(
+				self.profile.base_url, preferred, api_key=self.api_key
+			)
 		return self._model_id
 
 	def _default_max_tokens(self, max_tokens: int) -> int:

@@ -292,11 +292,8 @@ def _unified_initial_state(
 	use_tool_branch: bool,
 	openai_tools: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-	history, _user = split_history_and_user(messages)
-	if not history:
-		history = openai_messages_to_langchain(messages)
 	return {
-		"messages": history,
+		"messages": openai_messages_to_langchain(messages),
 		"metadata": metadata,
 		"memory_context": "",
 		"search_items": [],

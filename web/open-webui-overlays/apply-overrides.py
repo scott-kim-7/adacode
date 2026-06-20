@@ -529,6 +529,63 @@ def merge_i18n(target: Path, additions: Path) -> None:
     target.write_text(json.dumps(base, ensure_ascii=False, indent='\t') + '\n')
 
 
+def patch_config_default_features(path: Path) -> None:
+	text = path.read_text()
+	if "Ada default ENABLE_WEB_SEARCH" in text:
+		return
+	old = 'os.getenv("ENABLE_WEB_SEARCH", "False").lower() == "true",'
+	new = 'os.getenv("ENABLE_WEB_SEARCH", "True").lower() == "true",  # Ada default ENABLE_WEB_SEARCH'
+	if old not in text:
+		raise SystemExit("patch failed (config-default-features): anchor not found")
+	path.write_text(text.replace(old, new, 1))
+
+
+def patch_chat_default_features(path: Path) -> None:
+	text = path.read_text()
+	if "Ada default features ON" in text:
+		return
+	text = replace_once(
+		text,
+		"\tlet webSearchEnabled = false;\n\tlet codeInterpreterEnabled = false;",
+		"\t// Ada default features ON\n\tlet webSearchEnabled = true;\n\tlet codeInterpreterEnabled = true;",
+		label="chat-default-features-init",
+	)
+	for old, new in (
+		(
+			"\t\twebSearchEnabled = false;\n\t\timageGenerationEnabled = false;",
+			"\t\twebSearchEnabled = true;\n\t\timageGenerationEnabled = false;",
+		),
+		(
+			"\t\twebSearchEnabled = false;\n\t\timageGenerationEnabled = false;\n\t\tcodeInterpreterEnabled = false;",
+			"\t\twebSearchEnabled = true;\n\t\timageGenerationEnabled = false;\n\t\tcodeInterpreterEnabled = true;",
+		),
+		(
+			"\t\t\twebSearchEnabled = false;\n\t\t\timageGenerationEnabled = false;\n\t\t\tcodeInterpreterEnabled = false;",
+			"\t\t\twebSearchEnabled = true;\n\t\t\timageGenerationEnabled = false;\n\t\t\tcodeInterpreterEnabled = true;",
+		),
+	):
+		if old in text:
+			text = text.replace(old, new)
+	text = text.replace(
+		"\t\twebSearchEnabled = true;\n\t\timageGenerationEnabled = false;\n\t\tcodeInterpreterEnabled = false;",
+		"\t\twebSearchEnabled = true;\n\t\timageGenerationEnabled = false;\n\t\tcodeInterpreterEnabled = true;",
+	)
+	path.write_text(text)
+
+
+def patch_message_input_default_features(path: Path) -> None:
+	text = path.read_text()
+	if "Ada default features ON" in text:
+		return
+	text = replace_once(
+		text,
+		"\texport let webSearchEnabled = false;\n\texport let codeInterpreterEnabled = false;",
+		"\t// Ada default features ON\n\texport let webSearchEnabled = true;\n\texport let codeInterpreterEnabled = true;",
+		label="message-input-default-features",
+	)
+	path.write_text(text)
+
+
 def main() -> None:
     if len(sys.argv) != 3:
         raise SystemExit("usage: apply-overrides.py <open-webui-root> <overlay-root>")
@@ -539,6 +596,9 @@ def main() -> None:
     patch_navbar(root / "src/lib/components/chat/Navbar.svelte")
     patch_chat_controls(root / "src/lib/components/chat/ChatControls.svelte")
     patch_chat(root / "src/lib/components/chat/Chat.svelte")
+    patch_chat_default_features(root / "src/lib/components/chat/Chat.svelte")
+    patch_message_input_default_features(root / "src/lib/components/chat/MessageInput.svelte")
+    patch_config_default_features(root / "backend/open_webui/config.py")
     patch_dockerfile(root / "Dockerfile")
     patch_openai(root / "backend/open_webui/routers/openai.py")
     patch_middleware_features(root / "backend/open_webui/utils/middleware.py")

@@ -2,6 +2,8 @@
 
 Open WebUI는 **LangGraph agent API**(`:9082`)를 통해 MLX에 연결합니다. 터미널에서는 `ada ada-agent` CLI를 쓸 수 있습니다.
 
+**전체 그래프 목록·라우팅·연관관계:** [LANGGRAPH.md](LANGGRAPH.md) (UnifiedChatGraph, TaskGraph, ToolAgentGraph, Email 그래프 포함)
+
 ## 그래프 개요
 
 ```mermaid
@@ -74,7 +76,9 @@ LLM 서버(`http://127.0.0.1:8080/v1`, 외부 기동)와 `./scripts/ensure-ada-a
 
 | 경로 | LangGraph |
 |------|-----------|
-| Browser → Open WebUI → **:9082 agent API** → MainGraph → MLX | **사용** |
+| Browser → Open WebUI → **:9082 agent API** → **UnifiedChatGraph** → MLX | **사용** (일반 채팅) |
+| OWUI task (제목·태그 등) → **TaskGraph** | **사용** |
+| OWUI tools-only 요청 → **ToolAgentGraph** (single-shot) | **사용** |
 | Terminal → `ada ada-agent` | **MainGraph** |
 | (선택) `:9081` MLX proxy → MLX 직접 | 사용 안 함 |
 
@@ -115,7 +119,7 @@ python scripts/test_openwebui_stream.py --agent-only --plan-smoke --require-sse
 
 ## Vision (이미지 대화)
 
-Open WebUI가 보내는 `content: [{type:text}, {type:image_url}]` 형식을 agent API가 **그대로** MainGraph → MLX VLM까지 전달합니다.
+Open WebUI가 보내는 `content: [{type:text}, {type:image_url}]` 형식을 agent API가 **그대로** UnifiedChatGraph / MainGraph → MLX VLM까지 전달합니다.
 
 - `content.py` — `parse_openai_content`, `ensure_user_prompt` (이미지만 있을 때 기본 질문 추가)
 - `agent.yaml` → `vision.image_only_prompt`
@@ -124,15 +128,18 @@ Open WebUI가 보내는 `content: [{type:text}, {type:image_url}]` 형식을 age
 
 검증: `./scripts/verify-agent-vision.sh`
 
-## 향후 확장 (DESIGN_PLAN 3그래프)
+## 구현된 그래프 (요약)
 
 | 그래프 | 상태 |
 |--------|------|
-| **MainGraph** | ✓ route → plan → respond → verify |
-| ImprovementGraph | 미구현 (Spec 자기개선) |
-| EvalGraph | 미구현 (회귀 golden) |
+| **UnifiedChatGraph** | ✓ OWUI 프로덕션 채팅 (memory/search/RAG/tools + MainGraph 후반) |
+| **MainGraph** | ✓ CLI·regression (route → plan → respond → verify) |
+| **TaskGraph** | ✓ OWUI title/tags/follow-up/autocomplete |
+| **ToolAgentGraph** | ✓ function-calling (single-shot + Unified execute loop) |
+| **EmailSummarizeGraph / EmailDraftGraph** | ✓ Gmail inbox + 회신 초안 |
+| ImprovementGraph / EvalGraph | 미구현 (DESIGN_PLAN) |
 
-MainGraph의 `route`는 현재 키워드 휴리스틱이며, 이후 LLM 분류 또는 registry 프로필별 정책으로 교체할 수 있습니다.
+상세: [LANGGRAPH.md](LANGGRAPH.md). MainGraph의 `route`는 현재 키워드 휴리스틱이며, 이후 LLM 분류 또는 registry 프로필별 정책으로 교체할 수 있습니다.
 
 ## Gmail 이메일 대화 API (신규)
 

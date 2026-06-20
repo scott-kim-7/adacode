@@ -250,7 +250,8 @@ def test_stream_true_returns_sse_by_default():
 	app = create_app()
 	with (
 		patch("ada.agent.server.FORCE_NON_STREAM", False),
-		patch("ada.agent.server.effective_model_id", return_value="test-model"),
+		patch("ada.agent.server.resolve_effective_chat_model_id", return_value="test-model"),
+		patch("ada.agent.server.resolve_effective_task_model_id", return_value="test-model"),
 		patch("ada.agent.server.run_unified_chat_completion_streaming", side_effect=fake_streaming),
 	):
 		client = TestClient(app)
@@ -279,7 +280,8 @@ def test_stream_error_finishes_sse_with_done():
 	app = create_app()
 	with (
 		patch("ada.agent.server.FORCE_NON_STREAM", False),
-		patch("ada.agent.server.effective_model_id", return_value="test-model"),
+		patch("ada.agent.server.resolve_effective_chat_model_id", return_value="test-model"),
+		patch("ada.agent.server.resolve_effective_task_model_id", return_value="test-model"),
 		patch("ada.agent.server.run_unified_chat_completion_streaming", side_effect=fake_streaming),
 	):
 		client = TestClient(app)
@@ -307,7 +309,8 @@ def test_stream_true_buffered_when_force_non_stream_enabled():
 	app = create_app()
 	with (
 		patch("ada.agent.server.FORCE_NON_STREAM", True),
-		patch("ada.agent.server.effective_model_id", return_value="test-model"),
+		patch("ada.agent.server.resolve_effective_chat_model_id", return_value="test-model"),
+		patch("ada.agent.server.resolve_effective_task_model_id", return_value="test-model"),
 		patch("ada.agent.server.run_unified_chat_completion", side_effect=fake_run),
 	):
 		client = TestClient(app)
@@ -334,7 +337,8 @@ def test_stream_true_include_usage_emits_usage_chunk():
 	app = create_app()
 	with (
 		patch("ada.agent.server.FORCE_NON_STREAM", False),
-		patch("ada.agent.server.effective_model_id", return_value="test-model"),
+		patch("ada.agent.server.resolve_effective_chat_model_id", return_value="test-model"),
+		patch("ada.agent.server.resolve_effective_task_model_id", return_value="test-model"),
 		patch("ada.agent.server.run_unified_chat_completion_streaming", side_effect=fake_streaming),
 	):
 		client = TestClient(app)

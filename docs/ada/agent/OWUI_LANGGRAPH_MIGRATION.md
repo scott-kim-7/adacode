@@ -175,7 +175,7 @@ profiles:
 
 `Profile`: +`model_id: str = ""`, +`max_tokens: int | None = None`
 
-**런타임:** `build_llm_registry`가 `agent.yaml` `models.*`를 SSOT로 사용. OpenAI `model` 필드 = 각 프로필의 `model_id` (`mlx-coder`). 빈 `model_id`일 때만 `GET /v1/models` 자동 선택.
+**런타임:** `build_llm_registry`가 `agent.yaml` `models.*`를 SSOT로 사용. upstream OpenAI `model` 필드는 **`effective_model_id()`**로 해석 — MLX `/health`의 **loaded model 우선**, 없을 때 config `model_id`(선호값) 또는 `GET /v1/models` fallback.
 
 ### 5.2 `build_llm_registry(cfg) -> dict[str, Callable]`
 

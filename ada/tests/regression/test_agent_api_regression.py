@@ -29,7 +29,8 @@ def test_regression_stream_true_returns_buffered_json_not_sse():
 
 	with (
 		patch("ada.agent.server.FORCE_NON_STREAM", True),
-		patch("ada.agent.server.effective_model_id", return_value="test-model"),
+		patch("ada.agent.server.resolve_effective_chat_model_id", return_value="test-model"),
+		patch("ada.agent.server.resolve_effective_task_model_id", return_value="test-model"),
 		patch("ada.agent.server.run_unified_chat_completion", side_effect=fake_run),
 	):
 		client = TestClient(app)
@@ -60,7 +61,8 @@ def test_regression_stream_true_returns_sse_by_default():
 
 	with (
 		patch.dict(os.environ, {"ADA_AGENT_FORCE_NON_STREAM": "0"}, clear=False),
-		patch("ada.agent.server.effective_model_id", return_value="test-model"),
+		patch("ada.agent.server.resolve_effective_chat_model_id", return_value="test-model"),
+		patch("ada.agent.server.resolve_effective_task_model_id", return_value="test-model"),
 		patch("ada.agent.server.run_unified_chat_completion_streaming", side_effect=fake_streaming),
 	):
 		client = TestClient(app)

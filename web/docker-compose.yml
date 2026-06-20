@@ -29,6 +29,9 @@ services:
       ADA_AGENT_BASE_URL: ${ADA_AGENT_BASE_URL:-http://host.docker.internal:9082}
       # Phase 3: skip OWUI preprocess when Agent UnifiedGraph handles context
       ADA_AGENT_HANDLES_CONTEXT: ${ADA_AGENT_HANDLES_CONTEXT:-1}
+      # Default chat integrations ON (UI toggle + admin feature flags)
+      ENABLE_WEB_SEARCH: ${ENABLE_WEB_SEARCH:-true}
+      ENABLE_CODE_INTERPRETER: ${ENABLE_CODE_INTERPRETER:-true}
     volumes:
       - open-webui:/app/backend/data
     extra_hosts:

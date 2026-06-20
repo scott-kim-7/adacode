@@ -18,7 +18,8 @@ CONTEXT7_VAULT_KEY = "context7.api_key"
 def _vault_key(session: VaultSession | None, key: str) -> str | None:
 	try:
 		return resolve_vault_secret(key, session)
-	except VaultError:
+	except VaultError as exc:
+		log.warning("search: vault key %r unavailable (%s)", key, exc)
 		return None
 
 
@@ -39,13 +40,17 @@ def run_search_batch(
 	for provider in providers:
 		if provider == "exa":
 			exa_key = _vault_key(vault_session, EXA_VAULT_KEY)
-			if exa_key:
+			if not exa_key:
+				log.info("search: skipping exa (no vault key)")
+			else:
 				for result in search_exa(exa_key, text, max_results):
 					docs.append(_format_exa_doc(result))
 					urls.append(result.link)
 		if provider == "context7":
 			c7_key = _vault_key(vault_session, CONTEXT7_VAULT_KEY)
-			if c7_key:
+			if not c7_key:
+				log.info("search: skipping context7 (no vault key)")
+			else:
 				libs = search_library(c7_key, text, text)
 				if libs:
 					lib_id = libs[0].get("libraryId") or libs[0].get("name") or ""
@@ -56,6 +61,8 @@ def run_search_batch(
 							urls.append(f"context7://{lib_id}")
 
 	if not docs:
+		if providers:
+			log.info("search: no results for %r (providers=%s)", text, providers)
 		return []
 
 	return [

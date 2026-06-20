@@ -20,7 +20,8 @@ from ada.agent.llm_registry import (
 	models_config_from_api,
 	models_config_to_api,
 	profile_from_endpoint,
-	resolve_task_model_id,
+	resolve_effective_chat_model_id,
+	resolve_effective_task_model_id,
 )
 from ada.agent.models_ops import update_agent_models
 from ada.agent.openai_compat import (
@@ -39,9 +40,7 @@ from ada.email.platform import EmailPlatform
 from ada.heartbeat.runner import HeartbeatLifecycle
 from ada.openai_models import (
 	NoLoadedModelError,
-	effective_model_id,
 	loaded_model_from_health,
-	resolve_model_id,
 )
 from ada.vault import VaultError, VaultSession
 
@@ -221,14 +220,11 @@ def create_app(email_platform: EmailPlatform | None = None) -> FastAPI:
 		kind = classify_request(request.headers, payload)
 		metadata = parse_request_metadata(request.headers, payload)
 
-		task_model_id = resolve_task_model_id(cfg)
-		chat_model_id = (cfg.models.chat.model_id or "").strip()
 		try:
-			model = chat_model_id or effective_model_id(
-				f"{MLX_UPSTREAM}/v1",
-				str(payload.get("model") or ""),
-				api_key="local",
+			model = resolve_effective_chat_model_id(
+				cfg, requested=str(payload.get("model") or "")
 			)
+			task_model_id = resolve_effective_task_model_id(cfg)
 		except NoLoadedModelError as exc:
 			raise HTTPException(status_code=400, detail=str(exc)) from exc
 		stream_requested = bool(payload.get("stream"))
@@ -257,7 +253,7 @@ def create_app(email_platform: EmailPlatform | None = None) -> FastAPI:
 					registry["task"],
 					cfg,
 				)
-				response_model = task_model_id or model
+				response_model = task_model_id
 				body = build_chat_completion_response(response_model, content)
 			elif has_tools and not agent_tools:
 				assistant, finish_reason = await asyncio.to_thread(

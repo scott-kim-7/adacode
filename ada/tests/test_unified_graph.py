@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, patch
 
+from langchain_core.messages import HumanMessage
+
 from ada.agent.config import load_agent_config
 from ada.agent.openai_compat import run_unified_chat_completion
 from ada.agent.tool_policy import is_native_tool_request
@@ -34,6 +36,41 @@ def test_unified_graph_chat_mock_llm():
 			cfg,
 		)
 	assert result == "hello unified"
+
+
+def test_unified_graph_second_turn_uses_latest_user_message():
+	cfg = load_agent_config()
+	metadata = {"features": {"memory": False, "web_search": False}}
+	messages = [
+		{"role": "user", "content": "first"},
+		{"role": "assistant", "content": "answer one"},
+		{"role": "user", "content": "second"},
+	]
+	seen: list[list] = []
+
+	def chat_llm(msgs):
+		seen.append(list(msgs))
+		return "answer two"
+
+	def tool_llm(messages, tools=None):
+		return ChatCompletionResult(content="x", finish_reason="stop")
+
+	with patch("ada.agent.unified_nodes.asyncio.run", return_value=[]):
+		result = run_unified_chat_completion(
+			messages,
+			metadata,
+			chat_llm,
+			tool_llm,
+			cfg,
+		)
+
+	assert result == "answer two"
+	assert seen, "chat LLM should be invoked"
+	respond_messages = seen[-1]
+	last_user = next(
+		m for m in reversed(respond_messages) if isinstance(m, HumanMessage)
+	)
+	assert last_user.content == "second"
 
 
 def test_unified_tool_branch_returns_tool_calls():

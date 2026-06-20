@@ -88,6 +88,9 @@
 		<div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
 			{$i18n.t('Chat and task LLM endpoints (saved to Agent agent.yaml via admin proxy).')}
 		</div>
+		<div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+			{$i18n.t('If the model id differs from the MLX loaded model, Agent uses the loaded model at runtime.')}
+		</div>
 	</div>
 
 	{#if !ready}
